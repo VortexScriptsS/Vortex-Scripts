@@ -83,6 +83,7 @@ end
 function VortexUI:CreateWindow(options)
     local windowName = options.Name or "Vortex UI"
     local keySystem = options.KeySystem or nil
+    local onWindowCreated = options.OnWindowCreated or nil
     
     -- Setup key system if provided
     if keySystem then
@@ -93,18 +94,18 @@ function VortexUI:CreateWindow(options)
         -- Show key authentication window first
         if not KeySystem.Authenticated then
             VortexUI:ShowKeyWindow(function(success)
-                if not success then
-                    return nil
+                if success then
+                    KeySystem.Authenticated = true
+                    -- Create the actual window after successful authentication
+                    local windowOptions = {
+                        Name = windowName,
+                        KeySystem = nil,  -- Remove key system to avoid recursion
+                        OnWindowCreated = onWindowCreated
+                    }
+                    VortexUI:CreateWindow(windowOptions)
                 end
-                KeySystem.Authenticated = true
-                -- Create window without key system this time
-                local windowOptions = {
-                    Name = windowName,
-                    KeySystem = nil  -- Remove key system to avoid recursion
-                }
-                return VortexUI:CreateWindow(windowOptions)
             end, KeySystem)
-            return nil
+            return nil  -- Return nil initially, actual window created in callback
         end
     end
     
@@ -1504,6 +1505,11 @@ function VortexUI:CreateWindow(options)
         end
         
         return tab
+    end
+    
+    -- Call the callback if provided
+    if onWindowCreated then
+        onWindowCreated(window)
     end
     
     return window
