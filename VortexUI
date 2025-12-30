@@ -278,10 +278,10 @@ function VortexUI:CreateWindow(options)
             -- Ensure header is visible
             headerBar.Visible = true
             
-            -- Keep logo, minimize button, and close button visible, hide other header children
+            -- Keep logo, minimize button, close button, and title visible, hide other header children
             for _, child in ipairs(headerBar:GetChildren()) do
                 if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
-                    if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton then
+                    if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton and child ~= titleLabel then
                         child.Visible = false
                     else
                         child.Visible = true
@@ -301,6 +301,10 @@ function VortexUI:CreateWindow(options)
             headerBar.Size = UDim2.new(1, 0, 1, 0)
             logoFrame.AnchorPoint = Vector2.new(0, 0)
             logoFrame.Position = UDim2.new(0, 10, 0, 10)  -- Position logo on the left
+            
+            -- Adjust title for minimized header
+            titleLabel.Size = UDim2.new(1, -150, 1, 0)  -- Leave space for logo and buttons
+            titleLabel.Position = UDim2.new(0, 60, 0, 0)  -- Position after logo
             
             -- Adjust button positions for minimized header
             minimizeButton.Position = UDim2.new(1, -50, 0, 10)
@@ -328,6 +332,10 @@ function VortexUI:CreateWindow(options)
             headerBar.Size = UDim2.new(1, 0, 0, 60)
             logoFrame.AnchorPoint = Vector2.new(0, 0)
             logoFrame.Position = UDim2.new(0, 20, 0, 10)
+            
+            -- Restore title position and size
+            titleLabel.Size = UDim2.new(1, -120, 0.5, 0)
+            titleLabel.Position = UDim2.new(0, 70, 0, 10)
             
             -- Restore button positions
             minimizeButton.Position = UDim2.new(1, -95, 0, 10)
