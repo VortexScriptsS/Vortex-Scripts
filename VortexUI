@@ -248,7 +248,7 @@ function VortexUI:CreateWindow(options)
             -- Save current position before minimizing
             originalPosition = mainFrame.Position
             
-            -- Store original visibility states
+            -- Store original visibility states (but ensure header stays visible)
             originalVisibilities = {}
             for _, child in ipairs(mainFrame:GetChildren()) do
                 if child:IsA("GuiObject") then
@@ -274,10 +274,15 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
+            -- Ensure header is visible
+            headerBar.Visible = true
+            
             -- Keep logo, minimize button, and close button visible, hide other header children
             for _, child in ipairs(headerBar:GetChildren()) do
                 if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton and child:IsA("GuiObject") then
                     child.Visible = false
+                else
+                    child.Visible = true
                 end
             end
             
