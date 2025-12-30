@@ -251,7 +251,7 @@ function VortexUI:CreateWindow(options)
             -- Store original visibility states (but ensure header stays visible)
             originalVisibilities = {}
             for _, child in ipairs(mainFrame:GetChildren()) do
-                if child:IsA("GuiObject") then
+                if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     originalVisibilities[child] = child.Visible
                 end
             end
@@ -269,7 +269,7 @@ function VortexUI:CreateWindow(options)
             
             -- Hide all children except header
             for _, child in ipairs(mainFrame:GetChildren()) do
-                if child ~= headerBar and child:IsA("GuiObject") then
+                if child ~= headerBar and child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     child.Visible = false
                 end
             end
@@ -279,10 +279,12 @@ function VortexUI:CreateWindow(options)
             
             -- Keep logo, minimize button, and close button visible, hide other header children
             for _, child in ipairs(headerBar:GetChildren()) do
-                if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton and child:IsA("GuiObject") then
-                    child.Visible = false
-                else
-                    child.Visible = true
+                if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                    if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton then
+                        child.Visible = false
+                    else
+                        child.Visible = true
+                    end
                 end
             end
             
