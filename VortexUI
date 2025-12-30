@@ -262,12 +262,16 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
+            -- Hide all header children except logo
+            for _, child in ipairs(headerBar:GetChildren()) do
+                if child ~= logoFrame then
+                    child.Visible = false
+                end
+            end
+            
             -- Resize header to fill minimized window
             headerBar.Size = UDim2.new(1, 0, 1, 0)
             logoFrame.Position = UDim2.new(0.5, -20, 0.5, -20)  -- Center logo
-            titleLabel.Visible = false
-            minimizeButton.Visible = false
-            closeButton.Visible = false
         else
             -- Ensure restored position is within bounds
             local restoredPos = keepInBounds(originalPosition, originalSize)
@@ -283,12 +287,14 @@ function VortexUI:CreateWindow(options)
                 child.Visible = true
             end
             
+            -- Show all header children
+            for _, child in ipairs(headerBar:GetChildren()) do
+                child.Visible = true
+            end
+            
             -- Restore header
             headerBar.Size = UDim2.new(1, 0, 0, 60)
             logoFrame.Position = UDim2.new(0, 20, 0, 10)
-            titleLabel.Visible = true
-            minimizeButton.Visible = true
-            closeButton.Visible = true
             
             -- Update original position to the actual restored position
             originalPosition = restoredPos
