@@ -269,6 +269,14 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
+            -- Ensure content area is hidden (in case it's not a direct child)
+            if contentArea then
+                contentArea.Visible = false
+            end
+            if sidebarFrame then
+                sidebarFrame.Visible = false
+            end
+            
             -- Resize header to fill minimized window
             headerBar.Size = UDim2.new(1, 0, 1, 0)
             logoFrame.Position = UDim2.new(0.5, -20, 0.5, -20)  -- Center logo
@@ -290,6 +298,14 @@ function VortexUI:CreateWindow(options)
             -- Show all header children
             for _, child in ipairs(headerBar:GetChildren()) do
                 child.Visible = true
+            end
+            
+            -- Ensure content area and sidebar are visible
+            if contentArea then
+                contentArea.Visible = true
+            end
+            if sidebarFrame then
+                sidebarFrame.Visible = true
             end
             
             -- Restore header
