@@ -223,14 +223,16 @@ function VortexUI:CreateWindow(options)
     local originalSize = mainFrame.Size
     local originalPosition = mainFrame.Position
     local minimizedSize = UDim2.new(0, 60, 0, 60)  -- Just enough to show the logo
+    local originalVisibilities = {}
+    local currentTween = nil
     
     -- Function to keep window within screen bounds
     local function keepInBounds(position, size)
         local viewportSize = workspace.CurrentCamera.ViewportSize
-        local x = position.X.Offset
-        local y = position.Y.Offset
-        local width = size.X.Offset
-        local height = size.Y.Offset
+        local x = position.X.Offset + position.X.Scale * viewportSize.X
+        local y = position.Y.Offset + position.Y.Scale * viewportSize.Y
+        local width = size.X.Offset + size.X.Scale * viewportSize.X
+        local height = size.Y.Offset + size.Y.Scale * viewportSize.Y
         
         -- Ensure window stays within screen bounds
         x = math.max(0, math.min(x, viewportSize.X - width))
@@ -246,14 +248,24 @@ function VortexUI:CreateWindow(options)
             -- Save current position before minimizing
             originalPosition = mainFrame.Position
             
+            -- Store original visibility states
+            originalVisibilities = {}
+            for _, child in ipairs(mainFrame:GetChildren()) do
+                if child:IsA("GuiObject") then
+                    originalVisibilities[child] = child.Visible
+                end
+            end
+            
             -- Calculate minimized position and keep in bounds
             local minimizedPos = keepInBounds(mainFrame.Position, minimizedSize)
             
-            local tween = TweenService:Create(mainFrame, tweenInfo, {
+            -- Cancel previous tween if exists
+            if currentTween then currentTween:Cancel() end
+            currentTween = TweenService:Create(mainFrame, tweenInfo, {
                 Size = minimizedSize,
                 Position = minimizedPos
             })
-            tween:Play()
+            currentTween:Play()
             
             -- Hide all children except header
             for _, child in ipairs(mainFrame:GetChildren()) do
@@ -279,41 +291,30 @@ function VortexUI:CreateWindow(options)
             
             -- Resize header to fill minimized window
             headerBar.Size = UDim2.new(1, 0, 1, 0)
-            logoFrame.Position = UDim2.new(0.5, -20, 0.5, -20)  -- Center logo
+            logoFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+            logoFrame.Position = UDim2.new(0.5, 0, 0.5, 0)  -- Center logo using AnchorPoint
         else
             -- Ensure restored position is within bounds
             local restoredPos = keepInBounds(originalPosition, originalSize)
             
-            local tween = TweenService:Create(mainFrame, tweenInfo, {
+            -- Cancel previous tween if exists
+            if currentTween then currentTween:Cancel() end
+            currentTween = TweenService:Create(mainFrame, tweenInfo, {
                 Size = originalSize,
                 Position = restoredPos
             })
-            tween:Play()
+            currentTween:Play()
             
-            -- Show all children
-            for _, child in ipairs(mainFrame:GetChildren()) do
-                if child:IsA("GuiObject") then
-                    child.Visible = true
+            -- Restore original visibility states
+            for child, wasVisible in pairs(originalVisibilities) do
+                if child.Parent then  -- make sure it wasn't destroyed
+                    child.Visible = wasVisible
                 end
-            end
-            
-            -- Show all header children
-            for _, child in ipairs(headerBar:GetChildren()) do
-                if child:IsA("GuiObject") then
-                    child.Visible = true
-                end
-            end
-            
-            -- Ensure content area and sidebar are visible
-            if contentArea then
-                contentArea.Visible = true
-            end
-            if sidebarFrame then
-                sidebarFrame.Visible = true
             end
             
             -- Restore header
             headerBar.Size = UDim2.new(1, 0, 0, 60)
+            logoFrame.AnchorPoint = Vector2.new(0, 0)
             logoFrame.Position = UDim2.new(0, 20, 0, 10)
             
             -- Update original position to the actual restored position
