@@ -257,14 +257,14 @@ function VortexUI:CreateWindow(options)
             
             -- Hide all children except header
             for _, child in ipairs(mainFrame:GetChildren()) do
-                if child ~= headerBar then
+                if child ~= headerBar and child:IsA("GuiObject") then
                     child.Visible = false
                 end
             end
             
             -- Hide all header children except logo
             for _, child in ipairs(headerBar:GetChildren()) do
-                if child ~= logoFrame then
+                if child ~= logoFrame and child:IsA("GuiObject") then
                     child.Visible = false
                 end
             end
@@ -292,12 +292,16 @@ function VortexUI:CreateWindow(options)
             
             -- Show all children
             for _, child in ipairs(mainFrame:GetChildren()) do
-                child.Visible = true
+                if child:IsA("GuiObject") then
+                    child.Visible = true
+                end
             end
             
             -- Show all header children
             for _, child in ipairs(headerBar:GetChildren()) do
-                child.Visible = true
+                if child:IsA("GuiObject") then
+                    child.Visible = true
+                end
             end
             
             -- Ensure content area and sidebar are visible
