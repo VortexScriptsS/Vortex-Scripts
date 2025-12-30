@@ -155,7 +155,8 @@ function VortexUI:CreateWindow(options)
         Size = UDim2.new(0, 40, 0, 40),
         Position = UDim2.new(0, 20, 0, 10),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BorderSizePixel = 0
+        BorderSizePixel = 0,
+        Active = false
     })
     logoFrame.Parent = headerBar
     
