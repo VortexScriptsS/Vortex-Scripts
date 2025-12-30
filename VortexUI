@@ -222,7 +222,7 @@ function VortexUI:CreateWindow(options)
     local isMinimized = false
     local originalSize = mainFrame.Size
     local originalPosition = mainFrame.Position
-    local minimizedSize = UDim2.new(0, 60, 0, 60)  -- Just enough to show the logo
+    local minimizedSize = UDim2.new(0, 200, 0, 60)  -- Small header with buttons
     local originalVisibilities = {}
     local currentTween = nil
     
@@ -274,9 +274,9 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
-            -- Hide all header children except logo
+            -- Keep logo, minimize button, and close button visible, hide other header children
             for _, child in ipairs(headerBar:GetChildren()) do
-                if child ~= logoFrame and child:IsA("GuiObject") then
+                if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton and child:IsA("GuiObject") then
                     child.Visible = false
                 end
             end
@@ -291,8 +291,12 @@ function VortexUI:CreateWindow(options)
             
             -- Resize header to fill minimized window
             headerBar.Size = UDim2.new(1, 0, 1, 0)
-            logoFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-            logoFrame.Position = UDim2.new(0.5, 0, 0.5, 0)  -- Center logo using AnchorPoint
+            logoFrame.AnchorPoint = Vector2.new(0, 0)
+            logoFrame.Position = UDim2.new(0, 10, 0, 10)  -- Position logo on the left
+            
+            -- Adjust button positions for minimized header
+            minimizeButton.Position = UDim2.new(1, -50, 0, 10)
+            closeButton.Position = UDim2.new(1, -95, 0, 10)
         else
             -- Ensure restored position is within bounds
             local restoredPos = keepInBounds(originalPosition, originalSize)
@@ -316,6 +320,10 @@ function VortexUI:CreateWindow(options)
             headerBar.Size = UDim2.new(1, 0, 0, 60)
             logoFrame.AnchorPoint = Vector2.new(0, 0)
             logoFrame.Position = UDim2.new(0, 20, 0, 10)
+            
+            -- Restore button positions
+            minimizeButton.Position = UDim2.new(1, -95, 0, 10)
+            closeButton.Position = UDim2.new(1, -50, 0, 10)
             
             -- Update original position to the actual restored position
             originalPosition = restoredPos
