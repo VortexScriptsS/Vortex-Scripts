@@ -1668,20 +1668,34 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         warn("ERROR: Submit button is not a TextButton! Type:", submitButton.ClassName)
     end
     
+    -- Close button
+    local closeButton = CreateElement("TextButton", {
+        Name = "CloseButton",
+        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(1, -40, 0, 15),
+        BackgroundColor3 = CONFIG.ERROR_COLOR,
+        BorderSizePixel = 0,
+        Text = "X",
+        TextColor3 = Color3.new(1, 1, 1),
+        TextSize = 16,
+        Font = Enum.Font.GothamBold,
+        AutoButtonColor = true
+    })
+    closeButton.Parent = keyWindow
+    
+    AddCorner(closeButton, UDim.new(0, 6))
+    
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+        callback(false)
+    end)
+    
     -- Allow Enter key to submit
     keyInput.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             if submitButton and submitButton:IsA("TextButton") then
                 submitButton.MouseButton1Click:Fire()
             end
-        end
-    end)
-    
-    -- Close on overlay click
-    overlay.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            screenGui:Destroy()
-            callback(false)
         end
     end)
 end
