@@ -328,6 +328,14 @@ function VortexUI:CreateWindow(options)
         updateMinimizedState()
     end)
     
+    -- Click logo to restore when minimized
+    logoFrame.MouseButton1Click:Connect(function()
+        if isMinimized then
+            isMinimized = false
+            updateMinimizedState()
+        end
+    end)
+    
     -- Content Frame
     local contentFrame = CreateElement("Frame", {
         Name = "ContentFrame",
