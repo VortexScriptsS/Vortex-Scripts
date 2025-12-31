@@ -304,12 +304,11 @@ function VortexUI:CreateWindow(options)
             logoFrame.Position = UDim2.new(0, 10, 0, 10)  -- Position logo on the left
             
             -- Adjust title for minimized header
-            titleLabel.Size = UDim2.new(1, -150, 1, 0)  -- Leave space for logo and buttons
-            titleLabel.Position = UDim2.new(0, 60, 0, 0)  -- Position after logo
+            titleLabel.Visible = false
             
             -- Adjust button positions for minimized header
-            minimizeButton.Position = UDim2.new(1, -50, 0, 10)
-            closeButton.Position = UDim2.new(1, -95, 0, 10)
+            minimizeButton.Position = UDim2.new(1, -95, 0, 10)
+            closeButton.Position = UDim2.new(1, -50, 0, 10)
         else
             -- Ensure restored position is within bounds
             local restoredPos = keepInBounds(originalPosition, originalSize)
@@ -1500,6 +1499,13 @@ function VortexUI:CreateWindow(options)
             CreateTween(tabContent, TweenInfo.new(0.3), {
                 BackgroundTransparency = 0
             }):Play()
+            
+            -- Update canvas size for first tab
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
         else
             tabContent.Visible = false
         end
