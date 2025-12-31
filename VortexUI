@@ -1149,7 +1149,7 @@ function VortexUI:CreateWindow(options)
                 Size = UDim2.new(0, 20, 1, 0),
                 Position = UDim2.new(1, -22, 0, 0),
                 BackgroundTransparency = 1,
-                Text = "▽",
+                Text = "▼",
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 12,
                 Font = Enum.Font.GothamBold
