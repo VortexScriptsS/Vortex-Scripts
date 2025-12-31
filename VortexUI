@@ -213,6 +213,7 @@ end
 
 -- Main Window Creation
 function VortexUI:CreateWindow(options)
+    options = options or {}
     local windowName = options.Name or "Vortex UI"
     local keySystem = options.KeySystem or nil
     local onWindowCreated = options.OnWindowCreated or nil
