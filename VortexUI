@@ -5,6 +5,9 @@ local VortexUI = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
 local player = game.Players.LocalPlayer
 
 -- Configuration
@@ -37,6 +40,16 @@ local KeySystem = {
     ValidKeys = {},
     Authenticated = false
 }
+
+-- Icon System Variables (Rayfield Integration)
+local Icons = {}
+local IconsLoaded = false
+local IconsLoading = false
+local AtlasAssetId = nil
+
+-- Mobile/Touch Detection
+local isMobile = false
+local isTouch = false
 
 -- Utility Functions
 local function CreateElement(elementType, properties)
@@ -79,11 +92,134 @@ local function CreateTween(object, info, properties)
     return TweenService:Create(object, info, properties)
 end
 
+-- Icon System Functions (Rayfield Integration)
+
+-- Convert numeric asset ID to rbxassetid:// format
+local function getAssetUri(id)
+    if type(id) ~= "number" then
+        warn("VortexUI: Asset ID must be a number, got " .. type(id))
+        return ""
+    end
+    return "rbxassetid://" .. tostring(id)
+end
+
+VortexUI.getAssetUri = getAssetUri
+
+-- Detect mobile/touch environment
+local function detectMobileEnvironment()
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    isMobile = viewportSize.X < 1024 or viewportSize.Y < 768
+    isTouch = UserInputService.TouchEnabled
+    
+    -- Adjust configuration for mobile
+    if isMobile or isTouch then
+        CONFIG.TAB_HEIGHT = 56
+        CONFIG.TAB_SPACING = 64
+        CONFIG.WINDOW_SIZE = UDim2.new(0.9, 0, 0.8, 0)
+        CONFIG.SIDEBAR_WIDTH = 180
+    end
+end
+
+-- Load icons from Rayfield's GitHub repository
+local function loadIconsFromGitHub()
+    if IconsLoaded or IconsLoading then
+        return IconsLoaded
+    end
+    
+    IconsLoading = true
+    
+    local success, result = pcall(function()
+        local url = "https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/icons.lua"
+        local response = HttpService:GetAsync(url)
+        
+        -- Execute the loaded icons data
+        local iconsModule = loadstring(response)()
+        
+        if iconsModule and iconsModule.Icons then
+            Icons = iconsModule.Icons
+            AtlasAssetId = iconsModule.AtlasAssetId
+            IconsLoaded = true
+            print("VortexUI: Successfully loaded " .. #Icons .. " icons from Rayfield atlas")
+            return true
+        else
+            warn("VortexUI: Invalid icons data format from GitHub")
+            return false
+        end
+    end)
+    
+    if not success then
+        warn("VortexUI: Failed to load icons from GitHub: " .. tostring(result))
+        IconsLoading = false
+        return false
+    end
+    
+    IconsLoading = false
+    return IconsLoaded
+end
+
+-- Get icon data by name
+function VortexUI.getIcon(name)
+    if not IconsLoaded then
+        loadIconsFromGitHub()
+    end
+    
+    if not IconsLoaded then
+        warn("VortexUI: Icons not loaded, returning placeholder for '" .. name .. "'")
+        return {
+            id = 0,
+            imageRectSize = Vector2.new(24, 24),
+            imageRectOffset = Vector2.new(0, 0)
+        }
+    end
+    
+    -- Search for icon by name (case-insensitive)
+    for _, icon in ipairs(Icons) do
+        if icon.name and string.lower(icon.name) == string.lower(name) then
+            return {
+                id = icon.id or 0,
+                imageRectSize = icon.imageRectSize or Vector2.new(24, 24),
+                imageRectOffset = icon.imageRectOffset or Vector2.new(0, 0)
+            }
+        end
+    end
+    
+    -- Icon not found, return placeholder
+    warn("VortexUI: Icon '" .. name .. "' not found in atlas")
+    return {
+        id = 0,
+        imageRectSize = Vector2.new(24, 24),
+        imageRectOffset = Vector2.new(0, 0)
+    }
+end
+
+-- Get appropriate parent for UI (executor protection)
+local function getUIParent()
+    -- Try gethui() first (most executors)
+    if gethui then
+        return gethui()
+    end
+    
+    -- Try syn.protect_gui (Synapse)
+    if syn and syn.protect_gui then
+        local parent = Instance.new("ScreenGui")
+        syn.protect_gui(parent)
+        parent.Parent = CoreGui
+        return parent
+    end
+    
+    -- Fallback to CoreGui
+    return CoreGui
+end
+
 -- Main Window Creation
 function VortexUI:CreateWindow(options)
     local windowName = options.Name or "Vortex UI"
     local keySystem = options.KeySystem or nil
     local onWindowCreated = options.OnWindowCreated or nil
+    
+    -- Detect mobile environment and load icons
+    detectMobileEnvironment()
+    loadIconsFromGitHub()
     
     -- Setup key system if provided
     if keySystem then
@@ -111,25 +247,20 @@ function VortexUI:CreateWindow(options)
     
     local window = {}
     
-    -- Create ScreenGui
-    local CoreGui = game:GetService("CoreGui")
-    for _, child in ipairs(CoreGui:GetChildren()) do
-        if child.Name == "VortexUI" then
-            child:Destroy()
-        end
-    end
+    -- Create ScreenGui with executor protection
+    local parent = getUIParent()
     local screenGui = CreateElement("ScreenGui", {
         Name = "VortexUI",
         IgnoreGuiInset = true,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     })
-    screenGui.Parent = CoreGui
+    screenGui.Parent = parent
     
     -- Main Frame
     local mainFrame = CreateElement("Frame", {
         Name = "MainFrame",
-        Size = UDim2.new(0, 800, 0, 500),
-        Position = UDim2.new(0.5, -400, 0.5, -250),
+        Size = CONFIG.WINDOW_SIZE or UDim2.new(0, 800, 0, 500),
+        Position = UDim2.new(0.5, -(CONFIG.WINDOW_SIZE and CONFIG.WINDOW_SIZE.X.Offset/2 or 400), 0.5, -(CONFIG.WINDOW_SIZE and CONFIG.WINDOW_SIZE.Y.Offset/2 or 250)),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
@@ -372,7 +503,7 @@ function VortexUI:CreateWindow(options)
     -- Sidebar
     local sidebarFrame = CreateElement("Frame", {
         Name = "SidebarFrame",
-        Size = UDim2.new(0, 220, 1, 0),
+        Size = UDim2.new(0, CONFIG.SIDEBAR_WIDTH or 220, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.SECONDARY_COLOR,
         BorderSizePixel = 0
@@ -385,8 +516,8 @@ function VortexUI:CreateWindow(options)
     -- Content Area
     local contentArea = CreateElement("ScrollingFrame", {
         Name = "ContentArea",
-        Size = UDim2.new(1, -220, 1, 0),
-        Position = UDim2.new(0, 220, 0, 0),
+        Size = UDim2.new(1, -(CONFIG.SIDEBAR_WIDTH or 220), 1, 0),
+        Position = UDim2.new(0, CONFIG.SIDEBAR_WIDTH or 220, 0, 0),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0,
         ScrollBarThickness = 6,
@@ -472,6 +603,7 @@ function VortexUI:CreateWindow(options)
     -- Window methods
     function window:CreateTab(options)
         local tabName = options.Name or "New Tab"
+        local iconName = options.Icon or "home"  -- Default to home icon
         local tab = {}
         
         -- Create tab button in sidebar
@@ -482,8 +614,8 @@ function VortexUI:CreateWindow(options)
         
         local tabButton = CreateElement("TextButton", {
             Name = "TabButton_" .. tabName,
-            Size = UDim2.new(1, -20, 0, 48),
-            Position = UDim2.new(0, 10, 0, 10 + (tabCount * 56)),
+            Size = UDim2.new(1, -20, 0, CONFIG.TAB_HEIGHT or 48),
+            Position = UDim2.new(0, 10, 0, 10 + (tabCount * (CONFIG.TAB_SPACING or 56))),
             BackgroundColor3 = CONFIG.SECONDARY_COLOR,
             BorderSizePixel = 0,
             Text = "",
@@ -497,7 +629,23 @@ function VortexUI:CreateWindow(options)
         AddCorner(tabButton, UDim.new(0, 10))
         AddStroke(tabButton)
         
-        -- Tab label
+        -- Get icon data from Rayfield atlas
+        local iconData = VortexUI.getIcon(iconName)
+        
+        -- Icon ImageLabel
+        local iconLabel = CreateElement("ImageLabel", {
+            Name = "TabIcon",
+            Size = UDim2.new(0, 24, 0, 24),
+            Position = UDim2.new(0, 12, 0.5, -12),
+            BackgroundTransparency = 1,
+            Image = getAssetUri(iconData.id),
+            ImageRectSize = iconData.imageRectSize,
+            ImageRectOffset = iconData.imageRectOffset,
+            ImageTransparency = 0.2
+        })
+        iconLabel.Parent = tabButton
+        
+        -- Tab label (adjusted position to account for icon)
         local tabLabel = CreateElement("TextLabel", {
             Name = "TabLabel",
             Size = UDim2.new(1, -50, 1, 0),
@@ -510,6 +658,47 @@ function VortexUI:CreateWindow(options)
             TextXAlignment = Enum.TextXAlignment.Left
         })
         tabLabel.Parent = tabButton
+        
+        -- Hover effects for tab button
+        local hoverTween = CreateTween(tabButton, TweenInfo.new(CONFIG.TRANSITION_TIME), {
+            BackgroundColor3 = CONFIG.PANEL_COLOR
+        })
+        
+        local normalTween = CreateTween(tabButton, TweenInfo.new(CONFIG.TRANSITION_TIME), {
+            BackgroundColor3 = CONFIG.SECONDARY_COLOR
+        })
+        
+        tabButton.MouseEnter:Connect(function()
+            -- Check if this tab is not active
+            local isActive = false
+            for tabName, tabData in pairs(WindowInstances[window].Tabs) do
+                if tabData.Button == tabButton then
+                    isActive = (WindowInstances[window].ActiveTab == tabName)
+                    break
+                end
+            end
+            
+            if not isActive then
+                hoverTween:Play()
+                iconLabel.ImageTransparency = 0
+            end
+        end)
+        
+        tabButton.MouseLeave:Connect(function()
+            -- Check if this tab is not active
+            local isActive = false
+            for tabName, tabData in pairs(WindowInstances[window].Tabs) do
+                if tabData.Button == tabButton then
+                    isActive = (WindowInstances[window].ActiveTab == tabName)
+                    break
+                end
+            end
+            
+            if not isActive then
+                normalTween:Play()
+                iconLabel.ImageTransparency = 0.2
+            end
+        end)
         
         -- Accent indicator
         local accentIndicator = CreateElement("Frame", {
@@ -538,7 +727,7 @@ function VortexUI:CreateWindow(options)
         -- Tab click handler
         tabButton.MouseButton1Click:Connect(function()
             -- Hide all other tabs with animations
-            for _, otherTab in pairs(WindowInstances[window].Tabs) do
+            for otherTabName, otherTab in pairs(WindowInstances[window].Tabs) do
                 if otherTab.Content ~= tabContent then
                     -- Fade out content
                     CreateTween(otherTab.Content, TweenInfo.new(0.2), {
@@ -555,6 +744,13 @@ function VortexUI:CreateWindow(options)
                         Position = UDim2.new(0, -4, 0, 0),
                         BackgroundTransparency = 1
                     }):Play()
+                    
+                    -- Fade icon
+                    if otherTab.Icon then
+                        CreateTween(otherTab.Icon, TweenInfo.new(0.25), {
+                            ImageTransparency = 0.2
+                        }):Play()
+                    end
                     
                     wait(0.2)
                     otherTab.Content.Visible = false
@@ -588,6 +784,11 @@ function VortexUI:CreateWindow(options)
                 BackgroundTransparency = 0
             }):Play()
             
+            -- Highlight icon
+            CreateTween(iconLabel, TweenInfo.new(0.25), {
+                ImageTransparency = 0
+            }):Play()
+            
             -- Update canvas size with animation
             local layout = tabContent:FindFirstChildOfClass("UIListLayout")
             if layout then
@@ -596,6 +797,9 @@ function VortexUI:CreateWindow(options)
                     CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
                 }):Play()
             end
+            
+            -- Update active tab
+            WindowInstances[window].ActiveTab = tabName
         end)
         
         -- Add layout to tab content
@@ -610,6 +814,7 @@ function VortexUI:CreateWindow(options)
             Button = tabButton,
             Content = tabContent,
             AccentIndicator = accentIndicator,
+            Icon = iconLabel,  -- Store icon reference
             Elements = {}
         }
         
@@ -1510,6 +1715,90 @@ function VortexUI:CreateWindow(options)
     -- Call the callback if provided
     if onWindowCreated then
         onWindowCreated(window)
+    end
+    
+    -- Add theme changing functionality
+    function window:ChangeTheme(themeName, themeColors)
+        themeColors = themeColors or {}
+        
+        -- Predefined themes
+        local theme = {}
+        if themeName == "dark" then
+            theme = {
+                BackgroundColor = Color3.fromRGB(18, 18, 18),
+                SecondaryColor = Color3.fromRGB(28, 28, 28),
+                TextColor = Color3.fromRGB(240, 240, 240),
+                AccentColor = Color3.fromRGB(99, 102, 241),
+                BorderColor = Color3.fromRGB(50, 50, 50)
+            }
+        elseif themeName == "light" then
+            theme = {
+                BackgroundColor = Color3.fromRGB(240, 240, 240),
+                SecondaryColor = Color3.fromRGB(255, 255, 255),
+                TextColor = Color3.fromRGB(18, 18, 18),
+                AccentColor = Color3.fromRGB(99, 102, 241),
+                BorderColor = Color3.fromRGB(200, 200, 200)
+            }
+        elseif themeName == "blue" then
+            theme = {
+                BackgroundColor = Color3.fromRGB(15, 23, 42),
+                SecondaryColor = Color3.fromRGB(30, 41, 59),
+                TextColor = Color3.fromRGB(248, 250, 252),
+                AccentColor = Color3.fromRGB(59, 130, 246),
+                BorderColor = Color3.fromRGB(71, 85, 105)
+            }
+        else
+            theme = themeColors
+        end
+        
+        -- Apply theme to window
+        local windowInstance = WindowInstances[window]
+        if windowInstance then
+            -- Update main colors
+            if theme.BackgroundColor then
+                CONFIG.PRIMARY_COLOR = theme.BackgroundColor
+                windowInstance.MainFrame.BackgroundColor3 = theme.BackgroundColor
+                windowInstance.ContentArea.BackgroundColor3 = theme.BackgroundColor
+            end
+            
+            if theme.SecondaryColor then
+                CONFIG.SECONDARY_COLOR = theme.SecondaryColor
+                windowInstance.HeaderBar.BackgroundColor3 = theme.SecondaryColor
+                windowInstance.SidebarFrame.BackgroundColor3 = theme.SecondaryColor
+            end
+            
+            if theme.TextColor then
+                CONFIG.TEXT_COLOR = theme.TextColor
+                -- Update all text labels
+                for _, tab in pairs(windowInstance.Tabs) do
+                    if tab.Button and tab.Button:FindFirstChild("TabLabel") then
+                        tab.Button.TabLabel.TextColor3 = theme.TextColor
+                    end
+                end
+            end
+            
+            if theme.AccentColor then
+                CONFIG.ACCENT_COLOR = theme.AccentColor
+                -- Update accent indicators
+                for _, tab in pairs(windowInstance.Tabs) do
+                    if tab.AccentIndicator then
+                        tab.AccentIndicator.BackgroundColor3 = theme.AccentColor
+                    end
+                end
+            end
+            
+            if theme.BorderColor then
+                CONFIG.BORDER_COLOR = theme.BorderColor
+                -- Update all strokes
+                for _, element in pairs(windowInstance.Strokes or {}) do
+                    if element and element.Parent then
+                        element.Color = theme.BorderColor
+                    end
+                end
+            end
+        end
+        
+        print("VortexUI: Applied theme '" .. themeName .. "'")
     end
     
     return window
