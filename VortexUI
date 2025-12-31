@@ -204,6 +204,19 @@ function VortexUI:CreateWindow(options)
     
     AddCorner(minimizeButton, UDim.new(0, 8))
     
+    -- Enhanced minimize button hover effects
+    minimizeButton.MouseEnter:Connect(function()
+        CreateTween(minimizeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 42, 0, 42)
+        }):Play()
+    end)
+    
+    minimizeButton.MouseLeave:Connect(function()
+        CreateTween(minimizeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 40, 0, 40)
+        }):Play()
+    end)
+    
     -- Close Button
     local closeButton = CreateElement("TextButton", {
         Name = "CloseButton",
@@ -219,6 +232,21 @@ function VortexUI:CreateWindow(options)
     closeButton.Parent = headerBar
     
     AddCorner(closeButton, UDim.new(0, 8))
+    
+    -- Enhanced close button hover effects
+    closeButton.MouseEnter:Connect(function()
+        CreateTween(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 42, 0, 42),
+            BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        }):Play()
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        CreateTween(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 40, 0, 40),
+            BackgroundColor3 = CONFIG.PANEL_COLOR
+        }):Play()
+    end)
     
     -- Minimize/Maximize functionality
     local isMinimized = false
@@ -244,7 +272,7 @@ function VortexUI:CreateWindow(options)
     end
     
     local function updateMinimizedState()
-        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
         
         if isMinimized then
             -- Save current position before minimizing
@@ -496,6 +524,23 @@ function VortexUI:CreateWindow(options)
         AddCorner(tabButton, UDim.new(0, 10))
         AddStroke(tabButton)
         
+        -- Enhanced tab button hover effects
+        tabButton.MouseEnter:Connect(function()
+            if tabButton.BackgroundColor3 ~= CONFIG.PANEL_COLOR then
+                CreateTween(tabButton, TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = CONFIG.PANEL_COLOR
+                }):Play()
+            end
+        end)
+        
+        tabButton.MouseLeave:Connect(function()
+            if tabButton.BackgroundColor3 == CONFIG.PANEL_COLOR and not accentIndicator.Visible then
+                CreateTween(tabButton, TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = CONFIG.SECONDARY_COLOR
+                }):Play()
+            end
+        end)
+        
         -- Tab label
         local tabLabel = CreateElement("TextLabel", {
             Name = "TabLabel",
@@ -536,62 +581,66 @@ function VortexUI:CreateWindow(options)
         
         -- Tab click handler
         tabButton.MouseButton1Click:Connect(function()
-            -- Hide all other tabs with animations
+            -- Hide all other tabs with enhanced animations
             for _, otherTab in pairs(WindowInstances[window].Tabs) do
                 if otherTab.Content ~= tabContent then
-                    -- Fade out content
-                    CreateTween(otherTab.Content, TweenInfo.new(0.2), {
-                        BackgroundTransparency = 1
+                    -- Enhanced fade out with scale effect
+                    CreateTween(otherTab.Content, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(1, -40, 1, -40)
                     }):Play()
                     
-                    -- Animate button back to normal
-                    CreateTween(otherTab.Button, TweenInfo.new(0.25), {
+                    -- Smooth button color transition
+                    CreateTween(otherTab.Button, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
                         BackgroundColor3 = CONFIG.SECONDARY_COLOR
                     }):Play()
                     
-                    -- Slide accent indicator out
-                    CreateTween(otherTab.AccentIndicator, TweenInfo.new(0.3), {
+                    -- Enhanced accent indicator slide out
+                    CreateTween(otherTab.AccentIndicator, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
                         Position = UDim2.new(0, -4, 0, 0),
                         BackgroundTransparency = 1
                     }):Play()
                     
-                    wait(0.2)
+                    wait(0.25)
                     otherTab.Content.Visible = false
                     otherTab.AccentIndicator.Visible = false
                     otherTab.AccentIndicator.Position = UDim2.new(0, 0, 0, 0)
                     otherTab.AccentIndicator.BackgroundTransparency = 0
+                    -- Restore size
+                    otherTab.Content.Size = UDim2.new(1, -40, 1, -40)
                 end
             end
             
-            -- Show this tab with animations
+            -- Show this tab with enhanced animations
             tabContent.Visible = true
             tabContent.BackgroundColor3 = CONFIG.PRIMARY_COLOR
             tabContent.BackgroundTransparency = 1
+            tabContent.Size = UDim2.new(1, -40, 1, -40)
             
-            -- Fade in content
-            CreateTween(tabContent, TweenInfo.new(0.3), {
+            -- Enhanced fade in with scale effect
+            CreateTween(tabContent, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Animate button to active state
-            CreateTween(tabButton, TweenInfo.new(0.25), {
+            -- Smooth button color transition with pulse effect
+            CreateTween(tabButton, TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
                 BackgroundColor3 = CONFIG.PANEL_COLOR
             }):Play()
             
-            -- Slide accent indicator in
+            -- Enhanced accent indicator slide in with bounce
             accentIndicator.Visible = true
             accentIndicator.Position = UDim2.new(0, -4, 0, 0)
             accentIndicator.BackgroundTransparency = 1
-            CreateTween(accentIndicator, TweenInfo.new(0.3), {
+            CreateTween(accentIndicator, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Update canvas size with animation
+            -- Enhanced canvas size update with smooth animation
             local layout = tabContent:FindFirstChildOfClass("UIListLayout")
             if layout then
                 local absoluteContentSize = layout.AbsoluteContentSize
-                CreateTween(contentArea, TweenInfo.new(0.3), {
+                CreateTween(contentArea, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
                 }):Play()
             end
@@ -632,16 +681,28 @@ function VortexUI:CreateWindow(options)
             AddCorner(button)
             AddStroke(button)
             
-            -- Hover effect
+            -- Fade-in animation for button
+            button.BackgroundTransparency = 1
+            CreateTween(button, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0
+            }):Play()
+            
+            -- Enhanced hover effects with smooth transitions and scale
             button.MouseEnter:Connect(function()
-                CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME), {
+                CreateTween(button, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
                     BackgroundColor3 = CONFIG.ACCENT_HOVER
+                }):Play()
+                CreateTween(button, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 165, 0, 40)
                 }):Play()
             end)
             
             button.MouseLeave:Connect(function()
-                CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME), {
+                CreateTween(button, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
                     BackgroundColor3 = CONFIG.ACCENT_COLOR
+                }):Play()
+                CreateTween(button, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 160, 0, 40)
                 }):Play()
             end)
             
@@ -849,6 +910,12 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(toggleFrame, UDim.new(0, 10))
             AddStroke(toggleFrame)
+            
+            -- Fade-in animation for toggle frame
+            toggleFrame.BackgroundTransparency = 1
+            CreateTween(toggleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0
+            }):Play()
             
             -- Label
             local label = CreateElement("TextLabel", {
@@ -1495,16 +1562,18 @@ function VortexUI:CreateWindow(options)
             accentIndicator.Position = UDim2.new(0, 0, 0, 0)
             accentIndicator.BackgroundColor3 = CONFIG.ACCENT_COLOR
             
-            -- Animate first tab appearance
-            CreateTween(tabContent, TweenInfo.new(0.3), {
+            -- Enhanced first tab appearance with smooth fade
+            CreateTween(tabContent, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Update canvas size for first tab
+            -- Smooth canvas size update for first tab
             local layout = tabContent:FindFirstChildOfClass("UIListLayout")
             if layout then
                 local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+                CreateTween(contentArea, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+                }):Play()
             end
         else
             tabContent.Visible = false
