@@ -915,11 +915,11 @@ function VortexUI:CreateWindow(options)
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Label
+            -- Label with dynamic position based on lock state
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(0, 220, 1, 0),
-                Position = UDim2.new(0, 15, 0, 0),
+                Size = isLocked and UDim2.new(0, 220, 1, 0) or UDim2.new(0, 200, 1, 0),
+                Position = isLocked and UDim2.new(0, 15, 0, 0) or UDim2.new(0, 35, 0, 0),
                 BackgroundTransparency = 1,
                 Text = toggleName,
                 TextColor3 = CONFIG.TEXT_COLOR,
@@ -1011,6 +1011,21 @@ function VortexUI:CreateWindow(options)
                     callback(currentValue)
                 end
             end)
+            
+            -- Add lock icon if toggle is locked
+            if isLocked then
+                local icon = CreateElement("ImageLabel", {
+                    Name = "LockIcon",
+                    Size = UDim2.new(0, 20, 0, 20),
+                    Position = UDim2.new(0.5, -10, 0.5, -10), -- Center of the toggle
+                    BackgroundTransparency = 1,
+                    Image = "rbxassetid://15117261710",
+                    ImageTransparency = 0.2,
+                    ScaleType = Enum.ScaleType.Fit,
+                    ZIndex = 10 -- Ensure it's above other elements
+                })
+                icon.Parent = toggleFrame
+            end
             
             -- Store element
             WindowInstances[window].Tabs[tabName].Elements[toggleName] = toggleFrame
