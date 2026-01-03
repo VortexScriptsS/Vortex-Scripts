@@ -51,7 +51,7 @@ local CleanupManager = {
 local function CreateElement(elementType, properties)
     local element = Instance.new(elementType)
     for prop, value in pairs(properties) do
-        if typeof(value) == "EnumItem" or typeof(value) == "Color3" or typeof(value) == "UDim2" or typeof(value) == "UDim" then
+        if typeof(value) == "EnumItem" or typeof(value) == "Color3" or typeof(value) == "UDim2" or typeof(value) == "UDim" or typeof(value) == "boolean" then
             element[prop] = value
         else
             element[prop] = value
@@ -70,7 +70,8 @@ local function CreateElement(elementType, properties)
 end
 
 local function AddCorner(parent, radius)
-    local corner = CreateElement("UICorner", {CornerRadius = radius or CONFIG.CORNER_RADIUS})
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = radius or CONFIG.CORNER_RADIUS
     corner.Parent = parent
     return corner
 end
@@ -224,7 +225,8 @@ function VortexUI:CreateWindow(options)
     mainFrame.Parent = screenGui
     
     -- Explicitly add UICorner to mainFrame with specific radius
-    local mainCorner = CreateElement("UICorner", {CornerRadius = UDim.new(0, 12)})
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 12)
     mainCorner.Parent = mainFrame
     AddStroke(mainFrame)
     
