@@ -1979,8 +1979,8 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     -- Add gradient to header
     local headerGradient = Instance.new("UIGradient")
     headerGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(124, 119, 255)), -- Purple start
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241)) -- Blue end
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)), -- Blue start
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(124, 119, 255)) -- Lighter blue end
     }
     headerGradient.Rotation = 90
     headerGradient.Parent = headerFrame
@@ -2107,9 +2107,9 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     -- Add improved gradient to submit button
     local submitGradient = Instance.new("UIGradient")
     submitGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(124, 119, 255)), -- Purple start
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(99, 102, 241)), -- Blue middle
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)) -- Purple end
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)), -- Blue start
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(124, 119, 255)), -- Lighter blue middle
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241)) -- Blue end
     }
     submitGradient.Rotation = 90
     submitGradient.Parent = submitButton
@@ -2127,7 +2127,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BackgroundTransparency = 0.9,
         BorderSizePixel = 0,
-        Text = "✕",
+        Text = "X",
         TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 16,
         Font = Enum.Font.GothamBold,
@@ -2139,13 +2139,13 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     -- Enhanced button interactions with gradient-aware hover
     submitButton.MouseEnter:Connect(function()
-        -- Darken the gradient colors slightly on hover
+        -- Lighten the gradient colors slightly on hover
         local hoverGradient = submitButton:FindFirstChildOfClass("UIGradient")
         if hoverGradient then
             hoverGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(140, 135, 255)), -- Lighter purple start
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(115, 118, 245)), -- Lighter blue middle
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(163, 67, 238)) -- Lighter purple end
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 118, 245)), -- Lighter blue start
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 135, 255)), -- Lighter blue middle
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(115, 118, 245)) -- Lighter blue end
             }
         end
         CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
@@ -2158,9 +2158,9 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         local originalGradient = submitButton:FindFirstChildOfClass("UIGradient")
         if originalGradient then
             originalGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(124, 119, 255)), -- Purple start
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(99, 102, 241)), -- Blue middle
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)) -- Purple end
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)), -- Blue start
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(124, 119, 255)), -- Lighter blue middle
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241)) -- Blue end
             }
         end
         CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
