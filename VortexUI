@@ -2104,15 +2104,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     submitButton.Parent = buttonContainer
     
-    -- Add improved gradient to submit button
-    local submitGradient = Instance.new("UIGradient")
-    submitGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)), -- Blue start
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(124, 119, 255)), -- Lighter blue middle
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241)) -- Blue end
-    }
-    submitGradient.Rotation = 90
-    submitGradient.Parent = submitButton
+    -- Gradient removed for cleaner appearance
     
     AddCorner(submitButton, UDim.new(0, 8))
     
@@ -2137,32 +2129,20 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     AddCorner(closeButton, UDim.new(0, 16))
     
-    -- Enhanced button interactions with gradient-aware hover
+    -- Enhanced button interactions without gradient
     submitButton.MouseEnter:Connect(function()
-        -- Lighten the gradient colors slightly on hover
-        local hoverGradient = submitButton:FindFirstChildOfClass("UIGradient")
-        if hoverGradient then
-            hoverGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 118, 245)), -- Lighter blue start
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 135, 255)), -- Lighter blue middle
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(115, 118, 245)) -- Lighter blue end
-            }
-        end
+        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(CONFIG.ACCENT_COLOR.R * 1.1, CONFIG.ACCENT_COLOR.G * 1.1, CONFIG.ACCENT_COLOR.B * 1.1)
+        }):Play()
         CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 125, 1, 0)
         }):Play()
     end)
     
     submitButton.MouseLeave:Connect(function()
-        -- Restore original gradient colors
-        local originalGradient = submitButton:FindFirstChildOfClass("UIGradient")
-        if originalGradient then
-            originalGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)), -- Blue start
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(124, 119, 255)), -- Lighter blue middle
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241)) -- Blue end
-            }
-        end
+        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = CONFIG.ACCENT_COLOR
+        }):Play()
         CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 120, 1, 0)
         }):Play()
