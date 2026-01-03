@@ -1751,8 +1751,8 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
             end
             
             -- Check if key file exists
-            if isfile("Vortex/SavedKey.txt") then
-                local content = readfile("Vortex/SavedKey.txt")
+            if isfile("Vortex/Key.txt") then
+                local content = readfile("Vortex/Key.txt")
                 return content and content:gsub("%s+$", "") or nil
             end
             return nil
@@ -1769,8 +1769,8 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
             end
             
             -- Write key to file
-            writefile("Vortex/SavedKey.txt", key)
-            print("Key saved to Vortex/SavedKey.txt")
+            writefile("Vortex/Key.txt", key)
+            print("Key saved to Vortex/Key.txt")
         end)
     end
     
