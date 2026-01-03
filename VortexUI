@@ -39,6 +39,14 @@ local KeySystem = {
     LastValidKey = nil
 }
 
+-- Cleanup system for stopping operations when UI is destroyed
+local CleanupManager = {
+    ActiveConnections = {},
+    ActiveLoops = {},
+    ActiveToggles = {},
+    CleanupCallbacks = {}
+}
+
 -- Utility Functions
 local function CreateElement(elementType, properties)
     local element = Instance.new(elementType)
@@ -78,6 +86,85 @@ end
 
 local function CreateTween(object, info, properties)
     return TweenService:Create(object, info, properties)
+end
+
+-- Cleanup Manager Functions
+local function TrackConnection(connection, window)
+    if not CleanupManager.ActiveConnections[window] then
+        CleanupManager.ActiveConnections[window] = {}
+    end
+    table.insert(CleanupManager.ActiveConnections[window], connection)
+    return connection
+end
+
+local function TrackLoop(loopFunction, window, loopName)
+    if not CleanupManager.ActiveLoops[window] then
+        CleanupManager.ActiveLoops[window] = {}
+    end
+    CleanupManager.ActiveLoops[window][loopName] = loopFunction
+end
+
+local function TrackToggle(toggleCallback, window, toggleName)
+    if not CleanupManager.ActiveToggles[window] then
+        CleanupManager.ActiveToggles[window] = {}
+    end
+    CleanupManager.ActiveToggles[window][toggleName] = toggleCallback
+end
+
+local function AddCleanupCallback(callback, window)
+    if not CleanupManager.CleanupCallbacks[window] then
+        CleanupManager.CleanupCallbacks[window] = {}
+    end
+    table.insert(CleanupManager.CleanupCallbacks[window], callback)
+end
+
+local function CleanupWindow(window)
+    -- Disconnect all tracked connections
+    if CleanupManager.ActiveConnections[window] then
+        for _, connection in ipairs(CleanupManager.ActiveConnections[window]) do
+            if connection and connection.Disconnect then
+                connection:Disconnect()
+            end
+        end
+        CleanupManager.ActiveConnections[window] = {}
+    end
+    
+    -- Stop all tracked loops
+    if CleanupManager.ActiveLoops[window] then
+        for loopName, loopFunction in pairs(CleanupManager.ActiveLoops[window]) do
+            if type(loopFunction) == "function" then
+                pcall(loopFunction, false) -- Pass false to stop loops
+            end
+        end
+        CleanupManager.ActiveLoops[window] = {}
+    end
+    
+    -- Reset all tracked toggles to false
+    if CleanupManager.ActiveToggles[window] then
+        for toggleName, toggleCallback in pairs(CleanupManager.ActiveToggles[window]) do
+            if type(toggleCallback) == "function" then
+                pcall(toggleCallback, false) -- Set toggle to false
+            end
+        end
+        CleanupManager.ActiveToggles[window] = {}
+    end
+    
+    -- Call all cleanup callbacks
+    if CleanupManager.CleanupCallbacks[window] then
+        for _, callback in ipairs(CleanupManager.CleanupCallbacks[window]) do
+            if type(callback) == "function" then
+                pcall(callback)
+            end
+        end
+        CleanupManager.CleanupCallbacks[window] = {}
+    end
+    
+    -- Clear all toggle states
+    for flag in pairs(ToggleStates) do
+        if type(ToggleStates[flag]) == "boolean" then
+            ToggleStates[flag] = false
+        end
+    end
 end
 
 -- Main Window Creation
@@ -477,13 +564,16 @@ function VortexUI:CreateWindow(options)
     setupDrag(headerBar)
     setupDrag(logoFrame)
     
-    UserInputService.InputChanged:Connect(function(input)
+    local dragConnection = UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             update(input)
         end
     end)
     
+    TrackConnection(dragConnection, window)
+    
     closeButton.MouseButton1Click:Connect(function()
+        CleanupWindow(window)
         screenGui:Destroy()
     end)
     
@@ -1002,6 +1092,9 @@ function VortexUI:CreateWindow(options)
             -- Store initial state
             ToggleStates[flag] = currentValue
             
+            -- Track toggle callback for cleanup
+            TrackToggle(callback, window, toggleName)
+            
             local function updateToggle(enabled)
                 if enabled then
                     CreateTween(toggleButton, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
@@ -1171,7 +1264,7 @@ function VortexUI:CreateWindow(options)
                 dragging = true
             end)
             
-            UserInputService.InputChanged:Connect(function(input)
+            local sliderDragConnection = UserInputService.InputChanged:Connect(function(input)
                 if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                     local relativeX = input.Position.X - sliderTrack.AbsolutePosition.X
                     local percentage = math.max(0, math.min(1, relativeX / sliderTrack.AbsoluteSize.X))
@@ -1180,11 +1273,14 @@ function VortexUI:CreateWindow(options)
                 end
             end)
             
-            UserInputService.InputEnded:Connect(function(input)
+            local dragEndConnection = UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = false
                 end
             end)
+            
+            TrackConnection(sliderDragConnection, window)
+            TrackConnection(dragEndConnection, window)
             
             -- Store element
             WindowInstances[window].Tabs[tabName].Elements[sliderName] = sliderFrame
@@ -1389,6 +1485,7 @@ function VortexUI:CreateWindow(options)
                             setOpen(false)
                         end
                     end)
+                    TrackConnection(outsideConn, window)
                 else
                     local tween = CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                         Size = UDim2.new(1, 0, 0, 0)
