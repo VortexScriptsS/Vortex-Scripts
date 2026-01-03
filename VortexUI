@@ -577,6 +577,45 @@ function VortexUI:CreateWindow(options)
         screenGui:Destroy()
     end)
     
+    -- Add destruction detection for main window
+    local windowName = "VortexUI"
+    local cleanupCalled = false
+    
+    -- Monitor for UI destruction
+    local destructionConnection
+    destructionConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if not screenGui or not screenGui.Parent then
+            if not cleanupCalled then
+                cleanupCalled = true
+                if destructionConnection then
+                    destructionConnection:Disconnect()
+                end
+                CleanupWindow(window)
+            end
+        end
+    end)
+    
+    -- Also monitor for CoreGui children removal
+    local coreGuiConnection
+    coreGuiConnection = CoreGui.ChildRemoved:Connect(function(child)
+        if child.Name == windowName then
+            if not cleanupCalled then
+                cleanupCalled = true
+                if destructionConnection then
+                    destructionConnection:Disconnect()
+                end
+                if coreGuiConnection then
+                    coreGuiConnection:Disconnect()
+                end
+                CleanupWindow(window)
+            end
+        end
+    end)
+    
+    -- Track these connections for cleanup
+    TrackConnection(destructionConnection, window)
+    TrackConnection(coreGuiConnection, window)
+    
     -- Store window instance
     WindowInstances[window] = {
         ScreenGui = screenGui,
@@ -1821,81 +1860,207 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     })
     screenGui.Parent = CoreGui
+    
+    -- Add destruction detection for key window
+    local keyWindowName = "VortexKeyWindow"
+    local cleanupCalled = false
+    
+    -- Monitor for UI destruction
+    local destructionConnection
+    destructionConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if not screenGui or not screenGui.Parent then
+            if not cleanupCalled then
+                cleanupCalled = true
+                if destructionConnection then
+                    destructionConnection:Disconnect()
+                end
+                callback(false)
+            end
+        end
+    end)
+    
+    -- Also monitor for CoreGui children removal
+    local coreGuiConnection
+    coreGuiConnection = CoreGui.ChildRemoved:Connect(function(child)
+        if child.Name == keyWindowName then
+            if not cleanupCalled then
+                cleanupCalled = true
+                if destructionConnection then
+                    destructionConnection:Disconnect()
+                end
+                if coreGuiConnection then
+                    coreGuiConnection:Disconnect()
+                end
+                callback(false)
+            end
+        end
+    end)
 
-    -- Background overlay
+    -- Background overlay with blur effect
     local overlay = CreateElement("Frame", {
         Name = "Overlay",
         Size = UDim2.new(1, 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = 0.7,
         BorderSizePixel = 0
     })
     overlay.Parent = screenGui
+    
+    -- Add blur effect if available
+    local blurEffect = Instance.new("BlurEffect")
+    blurEffect.Size = 24
+    blurEffect.Parent = game:GetService("Lighting")
 
-    -- Shadow frame for depth
+    -- Enhanced shadow with gradient
     local shadow = CreateElement("Frame", {
         Name = "Shadow",
         Size = UDim2.new(0, 420, 0, 220),
         Position = UDim2.new(0.5, -210, 0.5, -110),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.7,
+        BackgroundTransparency = 0.8,
         BorderSizePixel = 0
     })
     shadow.Parent = overlay
 
     AddCorner(shadow, UDim.new(0, 16))
+    
+    -- Add gradient to shadow
+    local shadowGradient = Instance.new("UIGradient")
+    shadowGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+    }
+    shadowGradient.Rotation = 45
+    shadowGradient.Parent = shadow
 
-    -- Key window frame
+    -- Enhanced key window with better styling
     local keyWindow = CreateElement("Frame", {
         Name = "KeyWindow",
-        Size = UDim2.new(0, 400, 0, 250),
-        Position = UDim2.new(0.5, -200, 0.5, -125),
+        Size = UDim2.new(0, 420, 0, 280),
+        Position = UDim2.new(0.5, -210, 0.5, -140),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     keyWindow.Parent = overlay
 
-    AddCorner(keyWindow)
+    AddCorner(keyWindow, UDim.new(0, 16))
     AddStroke(keyWindow)
     
-    -- Title
+    -- Add gradient background to key window
+    local windowGradient = Instance.new("UIGradient")
+    windowGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, CONFIG.PRIMARY_COLOR),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(CONFIG.PRIMARY_COLOR.R * 0.9, CONFIG.PRIMARY_COLOR.G * 0.9, CONFIG.PRIMARY_COLOR.B * 0.9))
+    }
+    windowGradient.Rotation = 90
+    windowGradient.Parent = keyWindow
+    
+    -- Animated entrance
+    keyWindow.Size = UDim2.new(0, 0, 0, 0)
+    keyWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    CreateTween(keyWindow, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 420, 0, 280),
+        Position = UDim2.new(0.5, -210, 0.5, -140)
+    }):Play()
+    
+    -- Enhanced header with icon
+    local headerFrame = CreateElement("Frame", {
+        Name = "HeaderFrame",
+        Size = UDim2.new(1, 0, 0, 60),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BorderSizePixel = 0
+    })
+    headerFrame.Parent = keyWindow
+    
+    AddCorner(headerFrame, UDim.new(0, 16, 0, 0))
+    
+    -- Lock icon
+    local lockIcon = CreateElement("ImageLabel", {
+        Name = "LockIcon",
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0, 20, 0.5, -12),
+        BackgroundTransparency = 1,
+        Image = "rbxasset://textures/ui/InspectMenu/lock.png",
+        ImageColor3 = Color3.new(1, 1, 1),
+        ImageTransparency = 0.2
+    })
+    lockIcon.Parent = headerFrame
+    
+    -- Enhanced title
     local titleLabel = CreateElement("TextLabel", {
         Name = "TitleLabel",
-        Size = UDim2.new(1, -40, 0, 40),
-        Position = UDim2.new(0, 20, 0, 20),
+        Size = UDim2.new(1, -80, 1, 0),
+        Position = UDim2.new(0, 50, 0, 0),
         BackgroundTransparency = 1,
-        Text = "Enter License Key",
-        TextColor3 = CONFIG.TEXT_COLOR,
+        Text = "Authentication Required",
+        TextColor3 = Color3.new(1, 1, 1),
         TextSize = 18,
         Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    titleLabel.Parent = headerFrame
+    
+    -- Description label
+    local descLabel = CreateElement("TextLabel", {
+        Name = "DescLabel",
+        Size = UDim2.new(1, -40, 0, 20),
+        Position = UDim2.new(0, 20, 0, 70),
+        BackgroundTransparency = 1,
+        Text = "Please enter your license key to continue",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Center
     })
-    titleLabel.Parent = keyWindow
+    descLabel.Parent = keyWindow
     
-    -- Key input
+    -- Enhanced key input with better styling
+    local keyInputFrame = CreateElement("Frame", {
+        Name = "KeyInputFrame",
+        Size = UDim2.new(1, -40, 0, 50),
+        Position = UDim2.new(0, 20, 0, 100),
+        BackgroundColor3 = CONFIG.INPUT_COLOR,
+        BorderSizePixel = 0
+    })
+    keyInputFrame.Parent = keyWindow
+    
+    AddCorner(keyInputFrame, UDim.new(0, 10))
+    AddStroke(keyInputFrame)
+    
+    -- Key icon in input
+    local keyIcon = CreateElement("ImageLabel", {
+        Name = "KeyIcon",
+        Size = UDim2.new(0, 20, 0, 20),
+        Position = UDim2.new(0, 15, 0.5, -10),
+        BackgroundTransparency = 1,
+        Image = "rbxasset://textures/ui/InspectMenu/key.png",
+        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+        ImageTransparency = 0.5
+    })
+    keyIcon.Parent = keyInputFrame
+    
     local keyInput = CreateElement("TextBox", {
         Name = "KeyInput",
-        Size = UDim2.new(1, -40, 0, 40),
-        Position = UDim2.new(0, 20, 0, 80),
-        BackgroundColor3 = CONFIG.INPUT_COLOR,
-        BorderSizePixel = 0,
+        Size = UDim2.new(1, -50, 1, 0),
+        Position = UDim2.new(0, 40, 0, 0),
+        BackgroundTransparency = 1,
         Text = "",
         PlaceholderText = "Enter your license key...",
         PlaceholderColor3 = CONFIG.SUB_TEXT_COLOR,
         TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 14,
-        Font = Enum.Font.Gotham
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left
     })
-    keyInput.Parent = keyWindow
+    keyInput.Parent = keyInputFrame
     
-    AddCorner(keyInput, UDim.new(0, 8))
-    
-    -- Status label
+    -- Enhanced status label with better positioning
     local statusLabel = CreateElement("TextLabel", {
         Name = "StatusLabel",
         Size = UDim2.new(1, -40, 0, 20),
-        Position = UDim2.new(0, 20, 0, 130),
+        Position = UDim2.new(0, 20, 0, 160),
         BackgroundTransparency = 1,
         Text = "",
         TextColor3 = CONFIG.ERROR_COLOR,
@@ -1905,99 +2070,247 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     statusLabel.Parent = keyWindow
     
-    -- Submit button
+    -- Button container for better layout
+    local buttonContainer = CreateElement("Frame", {
+        Name = "ButtonContainer",
+        Size = UDim2.new(1, -40, 0, 40),
+        Position = UDim2.new(0, 20, 0, 190),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0
+    })
+    buttonContainer.Parent = keyWindow
+    
+    -- Enhanced submit button with better styling
     local submitButton = CreateElement("TextButton", {
         Name = "VortexSubmitButton",
-        Size = UDim2.new(0, 120, 0, 35),
-        Position = UDim2.new(0.5, -60, 0, 155),
+        Size = UDim2.new(0, 120, 1, 0),
+        Position = UDim2.new(0.5, -60, 0, 0),
         BackgroundColor3 = CONFIG.ACCENT_COLOR,
         BorderSizePixel = 0,
-        Text = "Submit",
+        Text = "Authenticate",
         TextColor3 = Color3.new(1, 1, 1),
         TextSize = 14,
         Font = Enum.Font.GothamSemibold,
-        AutoButtonColor = true
+        AutoButtonColor = false
     })
-    submitButton.Parent = keyWindow
+    submitButton.Parent = buttonContainer
     
-    -- Debug: Verify it's a TextButton
-    warn("Submit button type:", submitButton.ClassName)
+    -- Add gradient to submit button
+    local submitGradient = Instance.new("UIGradient")
+    submitGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(CONFIG.ACCENT_COLOR.R * 1.1, CONFIG.ACCENT_COLOR.G * 1.1, CONFIG.ACCENT_COLOR.B * 1.1))
+    }
+    submitGradient.Rotation = 90
+    submitGradient.Parent = submitButton
     
     AddCorner(submitButton, UDim.new(0, 8))
     
-    -- Submit button functionality
-    if submitButton and submitButton:IsA("TextButton") then
-        submitButton.MouseButton1Click:Connect(function()
-        local enteredKey = keyInput.Text
-        
-        if enteredKey == "" then
-            statusLabel.Text = "Please enter a key"
-            return
-        end
-        
-        -- Check if key is valid
-        local isValidKey = false
-        for _, validKey in ipairs(keySystemData.ValidKeys) do
-            if enteredKey == validKey then
-                isValidKey = true
-                break
-            end
-        end
-        
-        if isValidKey then
-            statusLabel.Text = "Key validated successfully!"
-            statusLabel.TextColor3 = CONFIG.SUCCESS_COLOR
-            -- Store the valid key for future auto-verification
-            KeySystem.LastValidKey = enteredKey
-            -- Save the key to file for persistence
-            saveKey(enteredKey)
-            wait(1)
-            screenGui:Destroy()
-            callback(true)
-        else
-            statusLabel.Text = "Invalid key. Please try again."
-            statusLabel.TextColor3 = CONFIG.ERROR_COLOR
-            CreateTween(keyWindow, TweenInfo.new(0.1), {
-                Position = UDim2.new(0.5, -195, 0.5, -100)
-            }):Play()
-            wait(0.1)
-            CreateTween(keyWindow, TweenInfo.new(0.1), {
-                Position = UDim2.new(0.5, -200, 0.5, -100)
+    -- Enhanced close button with better positioning
+    local closeButton = CreateElement("TextButton", {
+        Name = "CloseButton",
+        Size = UDim2.new(0, 32, 0, 32),
+        Position = UDim2.new(1, -16, 0, -16),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = 0.9,
+        BorderSizePixel = 0,
+        Text = "✕",
+        TextColor3 = CONFIG.TEXT_COLOR,
+        TextSize = 16,
+        Font = Enum.Font.GothamBold,
+        AutoButtonColor = false
+    })
+    closeButton.Parent = headerFrame
+    
+    AddCorner(closeButton, UDim.new(0, 16))
+    
+    -- Enhanced button interactions
+    submitButton.MouseEnter:Connect(function()
+        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(CONFIG.ACCENT_COLOR.R * 1.1, CONFIG.ACCENT_COLOR.G * 1.1, CONFIG.ACCENT_COLOR.B * 1.1)
+        }):Play()
+        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 125, 1, 0)
+        }):Play()
+    end)
+    
+    submitButton.MouseLeave:Connect(function()
+        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = CONFIG.ACCENT_COLOR
+        }):Play()
+        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 120, 1, 0)
+        }):Play()
+    end)
+    
+    -- Enhanced close button interactions
+    closeButton.MouseEnter:Connect(function()
+        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = CONFIG.ERROR_COLOR,
+            BackgroundTransparency = 0.7
+        }):Play()
+        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 36, 0, 36)
+        }):Play()
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.9
+        }):Play()
+        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 32, 0, 32)
+        }):Play()
+    end)
+    
+    -- Enhanced input field interactions
+    keyInputFrame.MouseEnter:Connect(function()
+        CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(CONFIG.INPUT_COLOR.R * 1.05, CONFIG.INPUT_COLOR.G * 1.05, CONFIG.INPUT_COLOR.B * 1.05)
+        }):Play()
+    end)
+    
+    keyInputFrame.MouseLeave:Connect(function()
+        if not keyInput:IsFocused() then
+            CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                BackgroundColor3 = CONFIG.INPUT_COLOR
             }):Play()
         end
     end)
+    
+    keyInput.Focused:Connect(function()
+        CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(CONFIG.INPUT_COLOR.R * 1.1, CONFIG.INPUT_COLOR.G * 1.1, CONFIG.INPUT_COLOR.B * 1.1)
+        }):Play()
+        CreateTween(keyIcon, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            ImageColor3 = CONFIG.ACCENT_COLOR
+        }):Play()
+    end)
+    
+    keyInput.FocusLost:Connect(function()
+        CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            BackgroundColor3 = CONFIG.INPUT_COLOR
+        }):Play()
+        CreateTween(keyIcon, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            ImageColor3 = CONFIG.SUB_TEXT_COLOR
+        }):Play()
+    end)
+    
+    -- Submit button functionality with enhanced feedback
+    if submitButton and submitButton:IsA("TextButton") then
+        submitButton.MouseButton1Click:Connect(function()
+            local enteredKey = keyInput.Text
+            
+            if enteredKey == "" then
+                statusLabel.Text = "Please enter a key"
+                statusLabel.TextColor3 = CONFIG.ERROR_COLOR
+                -- Shake animation for empty input
+                CreateTween(keyInputFrame, TweenInfo.new(0.1), {
+                    Position = UDim2.new(0, 23, 0, 100)
+                }):Play()
+                wait(0.1)
+                CreateTween(keyInputFrame, TweenInfo.new(0.1), {
+                    Position = UDim2.new(0, 20, 0, 100)
+                }):Play()
+                return
+            end
+            
+            -- Add loading state
+            submitButton.Text = "Validating..."
+            submitButton.AutoButtonColor = false
+            
+            -- Check if key is valid
+            local isValidKey = false
+            for _, validKey in ipairs(keySystemData.ValidKeys) do
+                if enteredKey == validKey then
+                    isValidKey = true
+                    break
+                end
+            end
+            
+            if isValidKey then
+                statusLabel.Text = "Authentication successful!"
+                statusLabel.TextColor3 = CONFIG.SUCCESS_COLOR
+                
+                -- Success animation
+                CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 440, 0, 290),
+                    Position = UDim2.new(0.5, -220, 0.5, -145)
+                }):Play()
+                
+                submitButton.Text = "✓ Success"
+                submitButton.BackgroundColor3 = CONFIG.SUCCESS_COLOR
+                
+                -- Store the valid key for future auto-verification
+                KeySystem.LastValidKey = enteredKey
+                -- Save the key to file for persistence
+                saveKey(enteredKey)
+                
+                wait(1.5)
+                
+                -- Smooth exit animation
+                CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+                    Size = UDim2.new(0, 0, 0, 0),
+                    Position = UDim2.new(0.5, 0, 0.5, 0)
+                }):Play()
+                
+                wait(0.3)
+                blurEffect:Destroy()
+                screenGui:Destroy()
+                callback(true)
+            else
+                statusLabel.Text = "Invalid key. Please try again."
+                statusLabel.TextColor3 = CONFIG.ERROR_COLOR
+                
+                -- Error shake animation
+                CreateTween(keyWindow, TweenInfo.new(0.08), {
+                    Position = UDim2.new(0.5, -205, 0.5, -140)
+                }):Play()
+                wait(0.08)
+                CreateTween(keyWindow, TweenInfo.new(0.08), {
+                    Position = UDim2.new(0.5, -215, 0.5, -140)
+                }):Play()
+                wait(0.08)
+                CreateTween(keyWindow, TweenInfo.new(0.08), {
+                    Position = UDim2.new(0.5, -210, 0.5, -140)
+                }):Play()
+                
+                submitButton.Text = "Authenticate"
+                submitButton.BackgroundColor3 = CONFIG.ACCENT_COLOR
+            end
+        end)
     else
         warn("ERROR: Submit button is not a TextButton! Type:", submitButton.ClassName)
     end
     
-    -- Close button
-    local closeButton = CreateElement("TextButton", {
-        Name = "CloseButton",
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -40, 0, 15),
-        BackgroundColor3 = CONFIG.ERROR_COLOR,
-        BorderSizePixel = 0,
-        Text = "X",
-        TextColor3 = Color3.new(1, 1, 1),
-        TextSize = 16,
-        Font = Enum.Font.GothamBold,
-        AutoButtonColor = true
-    })
-    closeButton.Parent = keyWindow
-    
-    AddCorner(closeButton, UDim.new(0, 6))
-    
+    -- Enhanced close button with cleanup
     closeButton.MouseButton1Click:Connect(function()
+        -- Smooth exit animation
+        CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0)
+        }):Play()
+        
+        wait(0.3)
+        blurEffect:Destroy()
         screenGui:Destroy()
         callback(false)
     end)
     
-    -- Allow Enter key to submit
+    -- Allow Enter key to submit with enhanced feedback
     keyInput.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             if submitButton and submitButton:IsA("TextButton") then
                 submitButton.MouseButton1Click:Fire()
             end
+        end
+    end)
+    
+    -- Clean up blur effect when window is destroyed
+    screenGui.AncestryChanged:Connect(function()
+        if not screenGui.Parent and blurEffect then
+            blurEffect:Destroy()
         end
     end)
 end
