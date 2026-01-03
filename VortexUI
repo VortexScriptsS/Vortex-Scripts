@@ -1742,30 +1742,35 @@ end
 
 -- Key System Window
 function VortexUI:ShowKeyWindow(callback, keySystemData)
-    -- Key persistence system
-    local keyFileName = "vortex_ui_key.txt"
-    local keyFilePath = "./" .. keyFileName
-    
-    -- Function to load saved key from file
+    -- Key persistence system using executor file system API
     local function loadSavedKey()
         local success, result = pcall(function()
-            local file = io.open(keyFilePath, "r")
-            if not file then return nil end
-            local content = file:read("*all")
-            file:close()
-            return content and content:gsub("%s+$", "") or nil
+            -- Check if Vortex folder exists, create if not
+            if not isfolder("workspace/Vortex") then
+                makefolder("workspace/Vortex")
+            end
+            
+            -- Check if key file exists
+            if isfile("workspace/Vortex/SavedKey.txt") then
+                local content = readfile("workspace/Vortex/SavedKey.txt")
+                return content and content:gsub("%s+$", "") or nil
+            end
+            return nil
         end)
         return success and result or nil
     end
     
-    -- Function to save key to file
+    -- Function to save key to executor file system
     local function saveKey(key)
         pcall(function()
-            local file = io.open(keyFilePath, "w")
-            if file then
-                file:write(key)
-                file:close()
+            -- Ensure Vortex folder exists
+            if not isfolder("workspace/Vortex") then
+                makefolder("workspace/Vortex")
             end
+            
+            -- Write key to file
+            writefile("workspace/Vortex/SavedKey.txt", key)
+            print("Key saved to workspace/Vortex/SavedKey.txt")
         end)
     end
     
