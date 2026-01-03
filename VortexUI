@@ -1907,10 +1907,10 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     overlay.Parent = screenGui
     
-    -- Add blur effect if available
-    local blurEffect = Instance.new("BlurEffect")
-    blurEffect.Size = 24
-    blurEffect.Parent = game:GetService("Lighting")
+    -- Remove blur effect for cleaner appearance
+    -- local blurEffect = Instance.new("BlurEffect")
+    -- blurEffect.Size = 24
+    -- blurEffect.Parent = game:GetService("Lighting")
 
     -- Enhanced shadow with gradient
     local shadow = CreateElement("Frame", {
@@ -2281,7 +2281,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
                 }):Play()
                 
                 wait(0.3)
-                blurEffect:Destroy()
                 screenGui:Destroy()
                 callback(true)
             else
@@ -2318,7 +2317,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         }):Play()
         
         wait(0.3)
-        blurEffect:Destroy()
         screenGui:Destroy()
         callback(false)
     end)
@@ -2332,12 +2330,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         end
     end)
     
-    -- Clean up blur effect when window is destroyed
-    screenGui.AncestryChanged:Connect(function()
-        if not screenGui.Parent and blurEffect then
-            blurEffect:Destroy()
-        end
-    end)
+    -- No blur effect cleanup needed (glow removed)
 end
 
 -- Export
