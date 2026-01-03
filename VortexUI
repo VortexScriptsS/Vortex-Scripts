@@ -1746,13 +1746,13 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     local function loadSavedKey()
         local success, result = pcall(function()
             -- Check if Vortex folder exists, create if not
-            if not isfolder("workspace/Vortex") then
-                makefolder("workspace/Vortex")
+            if not isfolder("Vortex") then
+                makefolder("Vortex")
             end
             
             -- Check if key file exists
-            if isfile("workspace/Vortex/SavedKey.txt") then
-                local content = readfile("workspace/Vortex/SavedKey.txt")
+            if isfile("Vortex/SavedKey.txt") then
+                local content = readfile("Vortex/SavedKey.txt")
                 return content and content:gsub("%s+$", "") or nil
             end
             return nil
@@ -1764,13 +1764,13 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     local function saveKey(key)
         pcall(function()
             -- Ensure Vortex folder exists
-            if not isfolder("workspace/Vortex") then
-                makefolder("workspace/Vortex")
+            if not isfolder("Vortex") then
+                makefolder("Vortex")
             end
             
             -- Write key to file
-            writefile("workspace/Vortex/SavedKey.txt", key)
-            print("Key saved to workspace/Vortex/SavedKey.txt")
+            writefile("Vortex/SavedKey.txt", key)
+            print("Key saved to Vortex/SavedKey.txt")
         end)
     end
     
