@@ -236,7 +236,8 @@ function VortexUI:CreateWindow(options)
     })
     headerBar.Parent = mainFrame
     
-    AddCorner(headerBar, UDim.new(0, 12))
+    -- Header Bar - No UICorner (square appearance)
+    AddStroke(headerBar)
     
     -- Logo Frame
     local logoFrame = CreateElement("Frame", {
@@ -481,7 +482,7 @@ function VortexUI:CreateWindow(options)
     })
     contentFrame.Parent = mainFrame
     
-    AddCorner(contentFrame)
+    -- Content Frame - No UICorner (square appearance)
     AddStroke(contentFrame)
     
     -- Sidebar
@@ -494,7 +495,7 @@ function VortexUI:CreateWindow(options)
     })
     sidebarFrame.Parent = contentFrame
     
-    AddCorner(sidebarFrame, UDim.new(0, 12))
+    -- Sidebar - No UICorner (square appearance)
     AddStroke(sidebarFrame)
     
     -- Content Area
@@ -512,7 +513,7 @@ function VortexUI:CreateWindow(options)
 
     contentArea.ClipsDescendants = false
     
-    AddCorner(contentArea, UDim.new(0, 12))
+    -- Content Area - No UICorner (square appearance)
     AddStroke(contentArea)
     
     -- Make draggable
@@ -652,7 +653,7 @@ function VortexUI:CreateWindow(options)
         })
         tabButton.Parent = sidebarFrame
         
-        AddCorner(tabButton, UDim.new(0, 10))
+        -- Tab Button - No UICorner (square appearance)
         AddStroke(tabButton)
         
         -- Enhanced tab button hover effects
@@ -1504,6 +1505,13 @@ function VortexUI:CreateWindow(options)
                     local openHeight = updateCanvasSize()
                     optionsListFrame.Visible = true
                     optionsListFrame.Size = UDim2.new(1, 0, 0, 0)
+                    
+                    -- Set high ZIndex to overlay over other elements
+                    dropdownFrame.ZIndex = 100
+                    optionsListFrame.ZIndex = 101
+                    label.ZIndex = 102
+                    dropdownButton.ZIndex = 102
+                    arrow.ZIndex = 103
 
                     CreateTween(optionsListFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, 0, 0, openHeight)
@@ -1536,6 +1544,12 @@ function VortexUI:CreateWindow(options)
                     tween.Completed:Connect(function()
                         if not isOpen then
                             optionsListFrame.Visible = false
+                            -- Reset ZIndex to normal values when closed
+                            dropdownFrame.ZIndex = 30
+                            optionsListFrame.ZIndex = 50
+                            label.ZIndex = 31
+                            dropdownButton.ZIndex = 31
+                            arrow.ZIndex = 32
                         end
                     end)
                 end
@@ -1560,6 +1574,13 @@ function VortexUI:CreateWindow(options)
                 optionButton.Parent = optionsListFrame
 
                 optionButton.ZIndex = optionsListFrame.ZIndex + 1
+                
+                -- Update ZIndex when dropdown opens/closes
+                local function updateOptionZIndex()
+                    optionButton.ZIndex = optionsListFrame.ZIndex + 1
+                end
+                
+                -- We'll call this when the dropdown state changes
 
                 AddCorner(optionButton, UDim.new(0, 6))
 
