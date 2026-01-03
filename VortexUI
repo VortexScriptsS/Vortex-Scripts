@@ -1964,7 +1964,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Position = UDim2.new(0.5, -210, 0.5, -140)
     }):Play()
     
-    -- Enhanced header with icon
+    -- Enhanced header with improved styling
     local headerFrame = CreateElement("Frame", {
         Name = "HeaderFrame",
         Size = UDim2.new(1, 0, 0, 60),
@@ -1975,6 +1975,15 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     headerFrame.Parent = keyWindow
     
     AddCorner(headerFrame, UDim.new(0, 16, 0, 0))
+    
+    -- Add gradient to header
+    local headerGradient = Instance.new("UIGradient")
+    headerGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(124, 119, 255)), -- Purple start
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241)) -- Blue end
+    }
+    headerGradient.Rotation = 90
+    headerGradient.Parent = headerFrame
     
     -- Lock icon
     local lockIcon = CreateElement("ImageLabel", {
@@ -2088,23 +2097,27 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         BackgroundColor3 = CONFIG.ACCENT_COLOR,
         BorderSizePixel = 0,
         Text = "Authenticate",
-        TextColor3 = Color3.new(1, 1, 1),
+        TextColor3 = Color3.fromRGB(255, 255, 255),
         TextSize = 14,
         Font = Enum.Font.GothamSemibold,
         AutoButtonColor = false
     })
     submitButton.Parent = buttonContainer
     
-    -- Add gradient to submit button
+    -- Add improved gradient to submit button
     local submitGradient = Instance.new("UIGradient")
     submitGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(CONFIG.ACCENT_COLOR.R * 1.1, CONFIG.ACCENT_COLOR.G * 1.1, CONFIG.ACCENT_COLOR.B * 1.1))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(124, 119, 255)), -- Purple start
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(99, 102, 241)), -- Blue middle
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)) -- Purple end
     }
     submitGradient.Rotation = 90
     submitGradient.Parent = submitButton
     
     AddCorner(submitButton, UDim.new(0, 8))
+    
+    -- Add subtle border to button
+    AddStroke(submitButton, 1, Color3.fromRGB(255, 255, 255)).Transparency = 0.3
     
     -- Enhanced close button with better positioning
     local closeButton = CreateElement("TextButton", {
@@ -2124,20 +2137,32 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     AddCorner(closeButton, UDim.new(0, 16))
     
-    -- Enhanced button interactions
+    -- Enhanced button interactions with gradient-aware hover
     submitButton.MouseEnter:Connect(function()
-        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = Color3.fromRGB(CONFIG.ACCENT_COLOR.R * 1.1, CONFIG.ACCENT_COLOR.G * 1.1, CONFIG.ACCENT_COLOR.B * 1.1)
-        }):Play()
+        -- Darken the gradient colors slightly on hover
+        local hoverGradient = submitButton:FindFirstChildOfClass("UIGradient")
+        if hoverGradient then
+            hoverGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(140, 135, 255)), -- Lighter purple start
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(115, 118, 245)), -- Lighter blue middle
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(163, 67, 238)) -- Lighter purple end
+            }
+        end
         CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 125, 1, 0)
         }):Play()
     end)
     
     submitButton.MouseLeave:Connect(function()
-        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = CONFIG.ACCENT_COLOR
-        }):Play()
+        -- Restore original gradient colors
+        local originalGradient = submitButton:FindFirstChildOfClass("UIGradient")
+        if originalGradient then
+            originalGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(124, 119, 255)), -- Purple start
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(99, 102, 241)), -- Blue middle
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)) -- Purple end
+            }
+        end
         CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 120, 1, 0)
         }):Play()
