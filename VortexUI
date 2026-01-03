@@ -1742,11 +1742,59 @@ end
 
 -- Key System Window
 function VortexUI:ShowKeyWindow(callback, keySystemData)
+    -- Key persistence system
+    local keyFileName = "vortex_ui_key.txt"
+    local keyFilePath = "./" .. keyFileName
+    
+    -- Function to load saved key from file
+    local function loadSavedKey()
+        local success, result = pcall(function()
+            local file = io.open(keyFilePath, "r")
+            if not file then return nil end
+            local content = file:read("*all")
+            file:close()
+            return content and content:gsub("%s+$", "") or nil
+        end)
+        return success and result or nil
+    end
+    
+    -- Function to save key to file
+    local function saveKey(key)
+        pcall(function()
+            local file = io.open(keyFilePath, "w")
+            if file then
+                file:write(key)
+                file:close()
+            end
+        end)
+    end
+    
+    -- Function to check if saved key is still valid
+    local function isSavedKeyValid(savedKey)
+        if not savedKey then return false end
+        for _, validKey in ipairs(keySystemData.ValidKeys) do
+            if savedKey == validKey then
+                return true
+            end
+        end
+        return false
+    end
+    
+    -- Try to load and validate saved key first
+    local savedKey = loadSavedKey()
+    if isSavedKeyValid(savedKey) then
+        KeySystem.LastValidKey = savedKey
+        KeySystem.Authenticated = true
+        callback(true)
+        return
+    end
+    
     -- Check if we already have a valid key that's still in the valid keys list
     if KeySystem.LastValidKey then
         for _, validKey in ipairs(keySystemData.ValidKeys) do
             if KeySystem.LastValidKey == validKey then
-                -- Key is still valid, auto-authenticate
+                -- Key is still valid, auto-authenticate and save it
+                saveKey(KeySystem.LastValidKey)
                 KeySystem.Authenticated = true
                 callback(true)
                 return
@@ -1896,6 +1944,8 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
             statusLabel.TextColor3 = CONFIG.SUCCESS_COLOR
             -- Store the valid key for future auto-verification
             KeySystem.LastValidKey = enteredKey
+            -- Save the key to file for persistence
+            saveKey(enteredKey)
             wait(1)
             screenGui:Destroy()
             callback(true)
