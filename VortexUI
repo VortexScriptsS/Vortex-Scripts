@@ -223,7 +223,9 @@ function VortexUI:CreateWindow(options)
     })
     mainFrame.Parent = screenGui
     
-    AddCorner(mainFrame)
+    -- Explicitly add UICorner to mainFrame with specific radius
+    local mainCorner = CreateElement("UICorner", {CornerRadius = UDim.new(0, 12)})
+    mainCorner.Parent = mainFrame
     AddStroke(mainFrame)
     
     -- Header Bar
