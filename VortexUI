@@ -1061,6 +1061,7 @@ function VortexUI:CreateWindow(options)
             local flag = options.Flag or toggleName
             local callback = options.Callback or function() end
             local isLocked = options.IsLocked or false
+            local tooltip = options.Tooltip or nil
             
             local toggleFrame = CreateElement("Frame", {
                 Name = "ToggleFrame_" .. toggleName,
@@ -1106,6 +1107,61 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(toggleButton, UDim.new(0, 14))
             AddStroke(toggleButton)
+            
+            -- Tooltip functionality
+            local tooltipFrame = nil
+            local tooltipLabel = nil
+            local tooltipVisible = false
+            
+            local function createTooltip()
+                if not tooltip then
+                    tooltipFrame = CreateElement("Frame", {
+                        Name = "TooltipFrame_" .. toggleName,
+                        Size = UDim2.new(0, 200, 0, 30),
+                        Position = UDim2.new(0, -210, 0, 0),
+                        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+                        BorderSizePixel = 0,
+                        ZIndex = 1000
+                    })
+                    tooltipFrame.Parent = toggleFrame.Parent
+                    
+                    AddCorner(tooltipFrame, UDim.new(0, 8))
+                    AddStroke(tooltipFrame)
+                    
+                    tooltipLabel = CreateElement("TextLabel", {
+                        Name = "TooltipLabel_" .. toggleName,
+                        Size = UDim2.new(1, -20, 0, 25),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = tooltip or "",
+                        TextColor3 = CONFIG.TEXT_COLOR,
+                        TextSize = 14,
+                        Font = Enum.Font.Gotham,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        TextYAlignment = Enum.TextYAlignment.Top,
+                        TextWrapped = true,
+                        ZIndex = 1001
+                    })
+                    tooltipLabel.Parent = tooltipFrame
+                    
+                    AddCorner(tooltipLabel, UDim.new(0, 6))
+                end
+            end
+            
+            -- Show tooltip on hover
+            toggleButton.MouseEnter:Connect(function()
+                if tooltip then
+                    createTooltip()
+                    tooltipVisible = true
+                    tooltipFrame.Visible = true
+                end
+            end)
+            
+            -- Hide tooltip on leave
+            toggleButton.MouseLeave:Connect(function()
+                tooltipVisible = false
+                tooltipFrame.Visible = false
+            end)
             
             -- Toggle indicator
             local toggleIndicator = CreateElement("Frame", {
