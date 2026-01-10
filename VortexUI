@@ -1123,7 +1123,8 @@ function VortexUI:CreateWindow(options)
                         BorderSizePixel = 0,
                         ZIndex = 1000
                     })
-                    tooltipFrame.Parent = toggleFrame.Parent
+                    -- Parent to the main content area instead of toggleFrame.Parent
+                    tooltipFrame.Parent = tabContent
                     
                     AddCorner(tooltipFrame, UDim.new(0, 8))
                     AddStroke(tooltipFrame)
@@ -1154,13 +1155,31 @@ function VortexUI:CreateWindow(options)
                     createTooltip()
                     tooltipVisible = true
                     tooltipFrame.Visible = true
+                    
+                    -- Position tooltip relative to the toggle button
+                    local buttonPos = toggleButton.AbsolutePosition
+                    local buttonSize = toggleButton.AbsoluteSize
+                    local tooltipSize = tooltipFrame.AbsoluteSize
+                    
+                    -- Calculate position to show tooltip above the button
+                    local x = buttonPos.X + (buttonSize.X / 2) - (tooltipSize.X / 2)
+                    local y = buttonPos.Y - tooltipSize.Y - 10
+                    
+                    -- Keep tooltip within screen bounds
+                    local viewportSize = workspace.CurrentCamera.ViewportSize
+                    x = math.max(10, math.min(x, viewportSize.X - tooltipSize.X - 10))
+                    y = math.max(10, math.min(y, viewportSize.Y - tooltipSize.Y - 10))
+                    
+                    tooltipFrame.Position = UDim2.new(0, x, 0, y)
                 end
             end)
             
             -- Hide tooltip on leave
             toggleButton.MouseLeave:Connect(function()
                 tooltipVisible = false
-                tooltipFrame.Visible = false
+                if tooltipFrame then
+                    tooltipFrame.Visible = false
+                end
             end)
             
             -- Toggle indicator
@@ -1264,6 +1283,19 @@ function VortexUI:CreateWindow(options)
             function element:IsLocked()
                 return isLocked
             end
+            
+            -- Cleanup tooltip when toggle is destroyed
+            local function cleanupTooltip()
+                if tooltipFrame then
+                    tooltipFrame:Destroy()
+                    tooltipFrame = nil
+                    tooltipLabel = nil
+                end
+            end
+            
+            -- Connect cleanup when toggle frame is destroyed
+            toggleFrame.Destroying:Connect(cleanupTooltip)
+            
             return element
         end
         
@@ -1491,7 +1523,8 @@ function VortexUI:CreateWindow(options)
             optionsListFrame.ClipsDescendants = true
             
             AddCorner(optionsListFrame, UDim.new(0, 6))
-            AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR).Transparency = 0.35
+    local optionsListStroke = AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR)
+    optionsListStroke.Transparency = 0.35
 
             local listPadding = CreateElement("UIPadding", {
                 PaddingTop = UDim.new(0, 6),
@@ -2055,7 +2088,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     headerFrame.Parent = keyWindow
     
-    AddCorner(headerFrame, UDim.new(0, 16, 0, 0))
+    AddCorner(headerFrame, UDim.new(0, 16))
     
     -- Add gradient to header
     local headerGradient = Instance.new("UIGradient")
@@ -2189,8 +2222,8 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     AddCorner(submitButton, UDim.new(0, 8))
     
-    -- Add subtle border to button
-    AddStroke(submitButton, 1, Color3.fromRGB(255, 255, 255)).Transparency = 0.3
+    local buttonStroke = AddStroke(submitButton, 1, Color3.fromRGB(255, 255, 255))
+    buttonStroke.Transparency = 0.3
     
     -- Enhanced close button with better positioning
     local closeButton = CreateElement("TextButton", {
