@@ -515,7 +515,7 @@ function VortexUI:CreateWindow(options)
     })
     contentArea.Parent = contentFrame
 
-    contentArea.ClipsDescendants = false
+    contentArea.ClipsDescendants = true
     
     -- Content Area - No UICorner (square appearance)
     AddStroke(contentArea)
@@ -732,7 +732,7 @@ function VortexUI:CreateWindow(options)
         })
         tabContent.Parent = contentArea
 
-        tabContent.ClipsDescendants = false
+        tabContent.ClipsDescendants = true
         
         -- Tab click handler
         tabButton.MouseButton1Click:Connect(function()
@@ -797,13 +797,7 @@ function VortexUI:CreateWindow(options)
             }):Play()
             
             -- Enhanced canvas size update with smooth animation
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                CreateTween(contentArea, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-                }):Play()
-            end
+            updateCanvasSize()
         end)
         
         -- Add layout to tab content
@@ -812,6 +806,18 @@ function VortexUI:CreateWindow(options)
             Padding = UDim.new(0, 10)
         })
         tabLayout.Parent = tabContent
+        
+        -- Function to update canvas size based on content
+        local function updateCanvasSize()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
+        end
+        
+        -- Auto-update canvas size when content changes
+        tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
         
         -- Store tab info
         WindowInstances[window].Tabs[tabName] = {
@@ -871,6 +877,14 @@ function VortexUI:CreateWindow(options)
             
             -- Store element
             WindowInstances[window].Tabs[tabName].Elements[buttonName] = button
+            
+            -- Update canvas size to accommodate new button
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
             
             -- Return element with methods
             local element = {}
@@ -943,6 +957,14 @@ function VortexUI:CreateWindow(options)
             -- Initial setup
             element:Set(title)
             
+            -- Update canvas size to accommodate new section
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
+            
             return element
         end
         
@@ -973,6 +995,14 @@ function VortexUI:CreateWindow(options)
                 elseif newIgnoreTheme ~= nil then
                     label.TextColor3 = newIgnoreTheme and Color3.fromRGB(255, 255, 255) or CONFIG.TEXT_COLOR
                 end
+            end
+            
+            -- Update canvas size to accommodate new label
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
             end
             
             return element
@@ -1050,6 +1080,14 @@ function VortexUI:CreateWindow(options)
                 if data.ContentColor ~= nil then
                     contentLabel.TextColor3 = data.ContentColor
                 end
+            end
+            
+            -- Update canvas size to accommodate new paragraph
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
             end
             
             return element
@@ -1296,6 +1334,14 @@ function VortexUI:CreateWindow(options)
             -- Connect cleanup when toggle frame is destroyed
             toggleFrame.Destroying:Connect(cleanupTooltip)
             
+            -- Update canvas size to accommodate new toggle
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
+            
             return element
         end
         
@@ -1416,6 +1462,14 @@ function VortexUI:CreateWindow(options)
             
             -- Store element
             WindowInstances[window].Tabs[tabName].Elements[sliderName] = sliderFrame
+            
+            -- Update canvas size to accommodate new slider
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
             
             -- Return element with methods
             local element = {}
@@ -1842,6 +1896,14 @@ function VortexUI:CreateWindow(options)
             -- Store element
             WindowInstances[window].Tabs[tabName].Elements[inputName] = inputFrame
             
+            -- Update canvas size to accommodate new input
+            task.wait()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+            end
+            
             -- Return element with methods
             local element = {}
             function element:Set(text)
@@ -1871,6 +1933,7 @@ function VortexUI:CreateWindow(options)
             }):Play()
             
             -- Smooth canvas size update for first tab
+            task.wait() -- Wait a frame for layout to calculate
             local layout = tabContent:FindFirstChildOfClass("UIListLayout")
             if layout then
                 local absoluteContentSize = layout.AbsoluteContentSize
