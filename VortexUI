@@ -1550,7 +1550,7 @@ function VortexUI:CreateWindow(options)
             
             local dropdownFrame = CreateElement("Frame", {
                 Name = "DropdownFrame_" .. dropdownName,
-                Size = UDim2.new(1, 0, 0, 80),
+                Size = UDim2.new(1, 0, 0, 70),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1563,12 +1563,12 @@ function VortexUI:CreateWindow(options)
             -- Dropdown label above
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, -32, 0, 18),
-                Position = UDim2.new(0, 16, 0, 8),
+                Size = UDim2.new(1, -32, 0, 20),
+                Position = UDim2.new(0, 16, 0, 10),
                 BackgroundTransparency = 1,
                 Text = dropdownName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 13,
+                TextSize = 14,
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ZIndex = 31
@@ -1578,8 +1578,8 @@ function VortexUI:CreateWindow(options)
             -- Modern dropdown button with enhanced styling
             local dropdownButton = CreateElement("TextButton", {
                 Name = "DropdownButton",
-                Size = UDim2.new(1, -32, 0, 38),
-                Position = UDim2.new(0, 16, 0, 32),
+                Size = UDim2.new(1, -32, 0, 36),
+                Position = UDim2.new(0, 16, 0, 28),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
                 Text = "",
@@ -1594,8 +1594,8 @@ function VortexUI:CreateWindow(options)
             -- Selected text
             local selectedText = CreateElement("TextLabel", {
                 Name = "SelectedText",
-                Size = UDim2.new(1, -44, 1, 0),
-                Position = UDim2.new(0, 16, 0, 0),
+                Size = UDim2.new(1, -40, 1, 0),
+                Position = UDim2.new(0, 14, 0, 0),
                 BackgroundTransparency = 1,
                 Text = currentOption or "Select option...",
                 TextColor3 = currentOption and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR,
@@ -1610,21 +1610,21 @@ function VortexUI:CreateWindow(options)
             -- Modern chevron icon
             local chevronContainer = CreateElement("Frame", {
                 Name = "ChevronContainer",
-                Size = UDim2.new(0, 28, 0, 28),
-                Position = UDim2.new(1, -32, 0.5, -14),
+                Size = UDim2.new(0, 24, 0, 24),
+                Position = UDim2.new(1, -30, 0.5, -12),
                 BackgroundTransparency = 1,
                 ZIndex = 32
             })
             chevronContainer.Parent = dropdownButton
             
-            local chevron = CreateElement("ImageLabel", {
+            local chevron = CreateElement("TextLabel", {
                 Name = "Chevron",
-                Size = UDim2.new(0, 14, 0, 14),
-                Position = UDim2.new(0.5, 0, 0.5, 0),
-                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Image = Icons["arrow-big-down"],
-                ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+                Text = "▾",
+                TextColor3 = CONFIG.SUB_TEXT_COLOR,
+                TextSize = 14,
+                Font = Enum.Font.Montserrat,
                 ZIndex = 33
             })
             chevron.Parent = chevronContainer
@@ -1633,7 +1633,7 @@ function VortexUI:CreateWindow(options)
             local optionsListFrame = CreateElement("ScrollingFrame", {
                 Name = "OptionsList",
                 Size = UDim2.new(1, -32, 0, 0),
-                Position = UDim2.new(0, 16, 0, 74),
+                Position = UDim2.new(0, 16, 0, 68),
                 BackgroundColor3 = CONFIG.SECONDARY_COLOR,
                 BorderSizePixel = 0,
                 Visible = false,
@@ -1652,16 +1652,16 @@ function VortexUI:CreateWindow(options)
             local listStroke = AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR, 0.3)
             
             local listPadding = CreateElement("UIPadding", {
-                PaddingTop = UDim.new(0, 8),
-                PaddingBottom = UDim.new(0, 8),
-                PaddingLeft = UDim.new(0, 8),
-                PaddingRight = UDim.new(0, 8)
+                PaddingTop = UDim.new(0, 6),
+                PaddingBottom = UDim.new(0, 6),
+                PaddingLeft = UDim.new(0, 6),
+                PaddingRight = UDim.new(0, 6)
             })
             listPadding.Parent = optionsListFrame
             
             local optionsLayout = CreateElement("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = UDim.new(0, 6)
+                Padding = UDim.new(0, 4)
             })
             optionsLayout.Parent = optionsListFrame
             
@@ -1694,7 +1694,7 @@ function VortexUI:CreateWindow(options)
             local function updateCanvasSizeDropdown()
                 local contentY = optionsLayout.AbsoluteContentSize.Y + 12
                 optionsListFrame.CanvasSize = UDim2.new(0, 0, 0, contentY)
-                return math.min(contentY, 180)
+                return math.min(contentY, 160)
             end
             
             optionsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -1793,7 +1793,7 @@ function VortexUI:CreateWindow(options)
                 
                 local optionButton = CreateElement("TextButton", {
                     Name = "Option_" .. i,
-                    Size = UDim2.new(1, 0, 0, 34),
+                    Size = UDim2.new(1, 0, 0, 32),
                     BackgroundColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.PANEL_COLOR,
                     BackgroundTransparency = isSelected and 0.85 or 0,
                     BorderSizePixel = 0,
@@ -1806,8 +1806,8 @@ function VortexUI:CreateWindow(options)
                 AddCorner(optionButton, CONFIG.CORNER_RADIUS_SM)
                 
                 local optionLabel = CreateElement("TextLabel", {
-                    Size = UDim2.new(1, -28, 1, 0),
-                    Position = UDim2.new(0, 14, 0, 0),
+                    Size = UDim2.new(1, -24, 1, 0),
+                    Position = UDim2.new(0, 12, 0, 0),
                     BackgroundTransparency = 1,
                     Text = option,
                     TextColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR,
@@ -1821,7 +1821,7 @@ function VortexUI:CreateWindow(options)
                 -- Checkmark for selected items
                 local checkmark = CreateElement("TextLabel", {
                     Size = UDim2.new(0, 16, 0, 16),
-                    Position = UDim2.new(1, -20, 0.5, -8),
+                    Position = UDim2.new(1, -24, 0.5, -8),
                     BackgroundTransparency = 1,
                     Text = "✓",
                     TextColor3 = CONFIG.ACCENT_COLOR,
