@@ -7,28 +7,27 @@ local player = game.Players.LocalPlayer
 -- Load Icons module
 local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"))()
 
--- Refined color palette with softer, more cohesive tones
+-- Modernized color palette with better contrast and depth
 local CONFIG = {
-    -- Base colors - slightly warmer dark tones
-    PRIMARY_COLOR = Color3.fromRGB(16, 16, 20),
-    SECONDARY_COLOR = Color3.fromRGB(24, 24, 30),
-    PANEL_COLOR = Color3.fromRGB(34, 34, 42),
-    INPUT_COLOR = Color3.fromRGB(44, 44, 54),
+    -- Base colors - deeper, richer tones
+    PRIMARY_COLOR = Color3.fromRGB(13, 13, 15),
+    SECONDARY_COLOR = Color3.fromRGB(22, 22, 26),
+    PANEL_COLOR = Color3.fromRGB(32, 32, 38),
+    INPUT_COLOR = Color3.fromRGB(40, 40, 48),
     
     -- Text colors with better hierarchy
-    TEXT_COLOR = Color3.fromRGB(250, 250, 252),
-    SUB_TEXT_COLOR = Color3.fromRGB(156, 163, 175),
-    MUTED_COLOR = Color3.fromRGB(107, 114, 128),
+    TEXT_COLOR = Color3.fromRGB(248, 250, 252),
+    SUB_TEXT_COLOR = Color3.fromRGB(148, 163, 184),
+    MUTED_COLOR = Color3.fromRGB(100, 116, 139),
     
-    -- Border and divider colors - subtle
-    BORDER_COLOR = Color3.fromRGB(50, 50, 60),
-    DIVIDER_COLOR = Color3.fromRGB(40, 40, 50),
+    -- Border and divider colors
+    BORDER_COLOR = Color3.fromRGB(55, 55, 65),
+    DIVIDER_COLOR = Color3.fromRGB(45, 45, 55),
     
-    -- Accent colors - refined blue-violet
-    ACCENT_COLOR = Color3.fromRGB(99, 102, 241),
-    ACCENT_HOVER = Color3.fromRGB(124, 128, 252),
-    ACCENT_GLOW = Color3.fromRGB(165, 180, 252),
-    ACCENT_DIM = Color3.fromRGB(79, 82, 200),
+    -- Accent colors - neutral blended theme
+    ACCENT_COLOR = Color3.fromRGB(100, 100, 110),
+    ACCENT_HOVER = Color3.fromRGB(120, 120, 130),
+    ACCENT_GLOW = Color3.fromRGB(140, 140, 150),
     
     -- Status colors
     SUCCESS_COLOR = Color3.fromRGB(34, 197, 94),
@@ -38,17 +37,17 @@ local CONFIG = {
     WARNING_COLOR = Color3.fromRGB(245, 158, 11),
     
     -- Design tokens
-    CORNER_RADIUS = UDim.new(0, 8),
-    CORNER_RADIUS_SM = UDim.new(0, 5),
-    CORNER_RADIUS_LG = UDim.new(0, 12),
-    CORNER_RADIUS_XL = UDim.new(0, 16),
+    CORNER_RADIUS = UDim.new(0, 10),
+    CORNER_RADIUS_SM = UDim.new(0, 6),
+    CORNER_RADIUS_LG = UDim.new(0, 14),
+    CORNER_RADIUS_XL = UDim.new(0, 18),
     BORDER_THICKNESS = 1,
-    TRANSITION_TIME = 0.2,
-    TRANSITION_TIME_FAST = 0.12,
+    TRANSITION_TIME = 0.25,
+    TRANSITION_TIME_FAST = 0.15,
     
-    -- Shadow
+    -- Shadow colors for depth
     SHADOW_COLOR = Color3.fromRGB(0, 0, 0),
-    SHADOW_TRANSPARENCY = 0.5
+    SHADOW_TRANSPARENCY = 0.6
 }
 
 -- Storage for elements and their states
@@ -62,7 +61,7 @@ local KeySystem = {
     LastValidKey = nil
 }
 
--- Cleanup system
+-- Cleanup system for stopping operations when UI is destroyed
 local CleanupManager = {
     ActiveConnections = {},
     ActiveLoops = {},
@@ -74,7 +73,11 @@ local CleanupManager = {
 local function CreateElement(elementType, properties)
     local element = Instance.new(elementType)
     for prop, value in pairs(properties) do
-        element[prop] = value
+        if typeof(value) == "EnumItem" or typeof(value) == "Color3" or typeof(value) == "UDim2" or typeof(value) == "UDim" or typeof(value) == "boolean" then
+            element[prop] = value
+        else
+            element[prop] = value
+        end
     end
     
     if elementType == "TextButton" then
@@ -94,6 +97,7 @@ local function AddCorner(parent, radius)
     return corner
 end
 
+-- Enhanced stroke with optional glow effect
 local function AddStroke(parent, thickness, color, transparency)
     local stroke = CreateElement("UIStroke", {
         Thickness = thickness or CONFIG.BORDER_THICKNESS,
@@ -104,18 +108,19 @@ local function AddStroke(parent, thickness, color, transparency)
     return stroke
 end
 
--- Improved drop shadow using 9-slice image
-local function AddDropShadow(parent, size, transparency)
-    size = size or 24
-    transparency = transparency or 0.6
+-- New utility for adding drop shadows
+local function AddShadow(parent, offset, spread, transparency)
+    offset = offset or 4
+    spread = spread or 8
+    transparency = transparency or 0.7
     
     local shadow = CreateElement("ImageLabel", {
-        Name = "DropShadow",
+        Name = "Shadow",
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 0, 0.5, 4),
-        Size = UDim2.new(1, size, 1, size),
-        ZIndex = -1,
+        Position = UDim2.new(0.5, 0, 0.5, offset),
+        Size = UDim2.new(1, spread * 2, 1, spread * 2),
+        ZIndex = parent.ZIndex - 1,
         Image = "rbxassetid://6015897843",
         ImageColor3 = CONFIG.SHADOW_COLOR,
         ImageTransparency = transparency,
@@ -126,14 +131,15 @@ local function AddDropShadow(parent, size, transparency)
     return shadow
 end
 
+-- New utility for gradient backgrounds
 local function AddGradient(parent, startColor, endColor, rotation)
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, startColor or parent.BackgroundColor3),
         ColorSequenceKeypoint.new(1, endColor or Color3.new(
-            math.max(0, parent.BackgroundColor3.R - 0.02),
-            math.max(0, parent.BackgroundColor3.G - 0.02),
-            math.max(0, parent.BackgroundColor3.B - 0.02)
+            math.max(0, parent.BackgroundColor3.R - 0.03),
+            math.max(0, parent.BackgroundColor3.G - 0.03),
+            math.max(0, parent.BackgroundColor3.B - 0.03)
         ))
     }
     gradient.Rotation = rotation or 90
@@ -254,7 +260,6 @@ function VortexUI:CreateWindow(options)
             child:Destroy()
         end
     end
-    
     local screenGui = CreateElement("ScreenGui", {
         Name = "VortexUI",
         IgnoreGuiInset = true,
@@ -262,70 +267,111 @@ function VortexUI:CreateWindow(options)
     })
     screenGui.Parent = CoreGui
     
-    -- Main Frame - using ClipsDescendants for external-only rounded corners
+    -- Main Frame with enhanced styling and shadow
     local mainFrame = CreateElement("Frame", {
         Name = "MainFrame",
         Size = UDim2.new(0, 820, 0, 520),
         Position = UDim2.new(0.5, -410, 0.5, -260),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
-        BorderSizePixel = 0,
-        ClipsDescendants = true -- This clips internal content to the rounded shape
+        BorderSizePixel = 0
     })
     mainFrame.Parent = screenGui
     
-    -- Add rounded corners to main frame only
+    -- Background frame with rounded corners for visual effect
+    local backgroundFrame = CreateElement("Frame", {
+        Name = "BackgroundFrame",
+        Size = UDim2.new(0, 830, 0, 530),
+        Position = UDim2.new(0.5, -415, 0.5, -265),
+        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+        BorderSizePixel = 0,
+        ZIndex = mainFrame.ZIndex - 1
+    })
+    backgroundFrame.Parent = screenGui
+    
+    local backgroundCorner = Instance.new("UICorner")
+    backgroundCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    backgroundCorner.Parent = backgroundFrame
+    
+    -- Remove border from background frame
+    -- local backgroundStroke = AddStroke(backgroundFrame, 1, CONFIG.BORDER_COLOR, 0.3)
+    
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    mainCorner.CornerRadius = UDim.new(0, 0)
     mainCorner.Parent = mainFrame
     
-    -- Subtle border
-    AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.4)
+    -- Remove bottom corners
+    local bottomCorner = Instance.new("UICorner")
+    bottomCorner.CornerRadius = UDim.new(0, 0)
+    bottomCorner.Parent = mainFrame
     
-    -- Add drop shadow
-    AddDropShadow(mainFrame, 32, 0.5)
+    -- Remove border from main frame
+    -- local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
     
-    -- Header Bar - NO corner radius, parent clips it
+    -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
         Name = "HeaderBar",
-        Size = UDim2.new(1, 0, 0, 52),
+        Size = UDim2.new(1, 0, 0, 56),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.SECONDARY_COLOR,
         BorderSizePixel = 0
     })
     headerBar.Parent = mainFrame
     
-    -- Subtle gradient on header
-    AddGradient(headerBar, 
-        Color3.fromRGB(28, 28, 35), 
-        CONFIG.SECONDARY_COLOR, 
-        180
-    )
+    -- Round only top corners of header
+    local headerCorner = Instance.new("UICorner")
+    headerCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    headerCorner.Parent = headerBar
+    
+    -- Cover bottom corners with frame
+    local headerCover = CreateElement("Frame", {
+        Name = "HeaderCover",
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 1, -20),
+        BackgroundColor3 = CONFIG.SECONDARY_COLOR,
+        BorderSizePixel = 0
+    })
+    headerCover.Parent = headerBar
     
     -- Divider line under header
     local headerDivider = CreateElement("Frame", {
         Name = "HeaderDivider",
         Size = UDim2.new(1, 0, 0, 1),
-        Position = UDim2.new(0, 0, 1, -1),
+        Position = UDim2.new(0, 0, 1, 0),
         BackgroundColor3 = CONFIG.DIVIDER_COLOR,
         BorderSizePixel = 0
     })
     headerDivider.Parent = headerBar
     
-    -- Logo Frame
+    -- Enhanced Logo Frame with glow effect
     local logoFrame = CreateElement("Frame", {
         Name = "LogoFrame",
-        Size = UDim2.new(0, 34, 0, 34),
-        Position = UDim2.new(0, 14, 0.5, -17),
-        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        Size = UDim2.new(0, 38, 0, 38),
+        Position = UDim2.new(0, 16, 0.5, -19),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         Active = false
     })
     logoFrame.Parent = headerBar
+    
     AddCorner(logoFrame, CONFIG.CORNER_RADIUS)
+    
+    -- Logo glow effect
+    local logoGlow = CreateElement("Frame", {
+        Name = "LogoGlow",
+        Size = UDim2.new(1, 12, 1, 12),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 0.8,
+        BorderSizePixel = 0,
+        ZIndex = logoFrame.ZIndex - 1
+    })
+    logoGlow.Parent = logoFrame
+    AddCorner(logoGlow, CONFIG.CORNER_RADIUS_LG)
     
     local logoImage = CreateElement("ImageLabel", {
         Name = "LogoImage",
-        Size = UDim2.new(1, -6, 1, -6),
+        Size = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
@@ -334,37 +380,37 @@ function VortexUI:CreateWindow(options)
     })
     logoImage.Parent = logoFrame
     
-    -- Title
+    -- Enhanced Title with better typography
     local titleLabel = CreateElement("TextLabel", {
         Name = "TitleLabel",
         Size = UDim2.new(1, -160, 0, 20),
-        Position = UDim2.new(0, 58, 0.5, -10),
+        Position = UDim2.new(0, 66, 0.5, -10),
         BackgroundTransparency = 1,
         Text = windowName,
         TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 16,
+        TextSize = 17,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     titleLabel.Parent = headerBar
     
-    -- Improved window controls with cleaner design
+    -- Window control buttons with modern pill design
     local controlsContainer = CreateElement("Frame", {
         Name = "ControlsContainer",
-        Size = UDim2.new(0, 72, 0, 28),
-        Position = UDim2.new(1, -86, 0.5, -14),
+        Size = UDim2.new(0, 80, 0, 32),
+        Position = UDim2.new(1, -96, 0.5, -16),
         BackgroundColor3 = CONFIG.PANEL_COLOR,
         BorderSizePixel = 0
     })
     controlsContainer.Parent = headerBar
-    AddCorner(controlsContainer, UDim.new(0, 14))
-    AddStroke(controlsContainer, 1, CONFIG.BORDER_COLOR, 0.6)
+    AddCorner(controlsContainer, UDim.new(0, 16))
+    AddStroke(controlsContainer, 1, CONFIG.BORDER_COLOR, 0.5)
     
     -- Minimize Button
     local minimizeButton = CreateElement("TextButton", {
         Name = "MinimizeButton",
-        Size = UDim2.new(0, 28, 0, 22),
-        Position = UDim2.new(0, 3, 0.5, -11),
+        Size = UDim2.new(0, 32, 0, 24),
+        Position = UDim2.new(0, 4, 0.5, -12),
         BackgroundColor3 = CONFIG.INPUT_COLOR,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -372,23 +418,23 @@ function VortexUI:CreateWindow(options)
         AutoButtonColor = false
     })
     minimizeButton.Parent = controlsContainer
-    AddCorner(minimizeButton, UDim.new(0, 6))
+    AddCorner(minimizeButton, UDim.new(0, 8))
     
     local minimizeIcon = CreateElement("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "−",
-        TextColor3 = CONFIG.MUTED_COLOR,
-        TextSize = 18,
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 20,
         Font = Enum.Font.GothamBold
     })
     minimizeIcon.Parent = minimizeButton
     
-    -- Close Button
+    -- Close Button with red accent on hover
     local closeButton = CreateElement("TextButton", {
         Name = "CloseButton",
-        Size = UDim2.new(0, 28, 0, 22),
-        Position = UDim2.new(1, -31, 0.5, -11),
+        Size = UDim2.new(0, 32, 0, 24),
+        Position = UDim2.new(1, -36, 0.5, -12),
         BackgroundColor3 = CONFIG.INPUT_COLOR,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -396,19 +442,19 @@ function VortexUI:CreateWindow(options)
         AutoButtonColor = false
     })
     closeButton.Parent = controlsContainer
-    AddCorner(closeButton, UDim.new(0, 6))
+    AddCorner(closeButton, UDim.new(0, 8))
     
     local closeIcon = CreateElement("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "×",
-        TextColor3 = CONFIG.MUTED_COLOR,
-        TextSize = 18,
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 22,
         Font = Enum.Font.GothamBold
     })
     closeIcon.Parent = closeButton
     
-    -- Hover effects
+    -- Enhanced hover effects for control buttons
     minimizeButton.MouseEnter:Connect(function()
         CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
             BackgroundTransparency = 0
@@ -423,7 +469,7 @@ function VortexUI:CreateWindow(options)
             BackgroundTransparency = 1
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            TextColor3 = CONFIG.MUTED_COLOR
+            TextColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -443,7 +489,7 @@ function VortexUI:CreateWindow(options)
             BackgroundColor3 = CONFIG.INPUT_COLOR
         }):Play()
         CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            TextColor3 = CONFIG.MUTED_COLOR
+            TextColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -451,7 +497,7 @@ function VortexUI:CreateWindow(options)
     local isMinimized = false
     local originalSize = mainFrame.Size
     local originalPosition = mainFrame.Position
-    local minimizedSize = UDim2.new(0, 200, 0, 52)
+    local minimizedSize = UDim2.new(0, 220, 0, 56)
     local originalVisibilities = {}
     local currentTween = nil
     
@@ -468,20 +514,20 @@ function VortexUI:CreateWindow(options)
         return UDim2.new(0, x, 0, y)
     end
     
-    -- Content Frame - NO corner radius
+    -- Content Frame
     local contentFrame = CreateElement("Frame", {
         Name = "ContentFrame",
-        Size = UDim2.new(1, 0, 1, -52),
-        Position = UDim2.new(0, 0, 0, 52),
+        Size = UDim2.new(1, 0, 1, -56),
+        Position = UDim2.new(0, 0, 0, 56),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     contentFrame.Parent = mainFrame
     
-    -- Sidebar - NO corner radius, parent clips the corners
+    -- Enhanced Sidebar with better styling
     local sidebarFrame = CreateElement("Frame", {
         Name = "SidebarFrame",
-        Size = UDim2.new(0, 180, 1, 0),
+        Size = UDim2.new(0, 200, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.SECONDARY_COLOR,
         BorderSizePixel = 0
@@ -500,23 +546,23 @@ function VortexUI:CreateWindow(options)
     
     -- Sidebar padding
     local sidebarPadding = CreateElement("UIPadding", {
-        PaddingTop = UDim.new(0, 10),
-        PaddingLeft = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10)
+        PaddingTop = UDim.new(0, 12),
+        PaddingLeft = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 12),
+        PaddingBottom = UDim.new(0, 12)
     })
     sidebarPadding.Parent = sidebarFrame
     
-    -- Content Area
+    -- Enhanced Content Area with better scrollbar
     local contentArea = CreateElement("ScrollingFrame", {
         Name = "ContentArea",
-        Size = UDim2.new(1, -180, 1, 0),
-        Position = UDim2.new(0, 180, 0, 0),
+        Size = UDim2.new(1, -200, 1, 0),
+        Position = UDim2.new(0, 200, 0, 0),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0,
-        ScrollBarThickness = 3,
+        ScrollBarThickness = 4,
         ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
-        ScrollBarImageTransparency = 0.4,
+        ScrollBarImageTransparency = 0.3,
         TopImage = "rbxassetid://6015897843",
         MidImage = "rbxassetid://6015897843",
         BottomImage = "rbxassetid://6015897843"
@@ -525,7 +571,7 @@ function VortexUI:CreateWindow(options)
     contentArea.ClipsDescendants = true
     
     local function updateMinimizedState()
-        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
         
         if isMinimized then
             originalPosition = mainFrame.Position
@@ -546,6 +592,13 @@ function VortexUI:CreateWindow(options)
             })
             currentTween:Play()
             
+            -- Animate background frame for minimized state
+            local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
+                Size = UDim2.new(0, 230, 0, 66),
+                Position = UDim2.new(minimizedPos.X.Scale, minimizedPos.X.Offset - 5, minimizedPos.Y.Scale, minimizedPos.Y.Offset - 5)
+            })
+            backgroundTween:Play()
+            
             for _, child in ipairs(mainFrame:GetChildren()) do
                 if child ~= headerBar and child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     child.Visible = false
@@ -556,7 +609,7 @@ function VortexUI:CreateWindow(options)
             
             for _, child in ipairs(headerBar:GetChildren()) do
                 if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
-                    if child ~= logoFrame and child ~= controlsContainer and child ~= titleLabel and child.Name ~= "HeaderDivider" then
+                    if child ~= logoFrame and child ~= controlsContainer and child ~= titleLabel and child.Name ~= "HeaderCover" and child.Name ~= "HeaderDivider" then
                         child.Visible = false
                     else
                         child.Visible = true
@@ -579,17 +632,25 @@ function VortexUI:CreateWindow(options)
             })
             currentTween:Play()
             
+            -- Animate background frame for restored state
+            local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
+                Size = UDim2.new(0, 830, 0, 530),
+                Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - 5, restoredPos.Y.Scale, restoredPos.Y.Offset - 5)
+            })
+            backgroundTween:Play()
+            
             for child, wasVisible in pairs(originalVisibilities) do
                 if child.Parent then
                     child.Visible = wasVisible
                 end
             end
             
+            -- Explicitly restore main content areas
             if contentArea then contentArea.Visible = true end
             if sidebarFrame then sidebarFrame.Visible = true end
             if titleLabel then titleLabel.Visible = true end
             
-            headerBar.Size = UDim2.new(1, 0, 0, 52)
+            headerBar.Size = UDim2.new(1, 0, 0, 56)
             originalPosition = restoredPos
         end
     end
@@ -610,6 +671,15 @@ function VortexUI:CreateWindow(options)
         local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         local boundedPosition = keepInBounds(newPosition, isMinimized and minimizedSize or mainFrame.Size)
         mainFrame.Position = boundedPosition
+        
+        -- Move background frame along with main frame
+        local backgroundOffset = 5 -- 10px larger frame, so 5px offset on each side
+        backgroundFrame.Position = UDim2.new(
+            boundedPosition.X.Scale, 
+            boundedPosition.X.Offset - backgroundOffset, 
+            boundedPosition.Y.Scale, 
+            boundedPosition.Y.Offset - backgroundOffset
+        )
     end
     
     local function handleDragStart(input)
@@ -711,11 +781,11 @@ function VortexUI:CreateWindow(options)
             tabCount = tabCount + 1
         end
         
-        -- Refined Tab Button styling
+        -- Enhanced Tab Button with modern styling
         local tabButton = CreateElement("TextButton", {
             Name = "TabButton_" .. tabName,
-            Size = UDim2.new(1, 0, 0, 40),
-            Position = UDim2.new(0, 0, 0, tabCount * 48),
+            Size = UDim2.new(1, 0, 0, 44),
+            Position = UDim2.new(0, 0, 0, tabCount * 52),
             BackgroundColor3 = CONFIG.SECONDARY_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
@@ -730,8 +800,8 @@ function VortexUI:CreateWindow(options)
         -- Tab Icon container
         local tabIconContainer = CreateElement("Frame", {
             Name = "IconContainer",
-            Size = UDim2.new(0, 28, 0, 28),
-            Position = UDim2.new(0, 6, 0.5, -14),
+            Size = UDim2.new(0, 32, 0, 32),
+            Position = UDim2.new(0, 8, 0.5, -16),
             BackgroundColor3 = CONFIG.PANEL_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
@@ -741,12 +811,12 @@ function VortexUI:CreateWindow(options)
         
         local tabLabel = CreateElement("TextLabel", {
             Name = "TabLabel",
-            Size = UDim2.new(1, -48, 1, 0),
-            Position = UDim2.new(0, 42, 0, 0),
+            Size = UDim2.new(1, -56, 1, 0),
+            Position = UDim2.new(0, 48, 0, 0),
             BackgroundTransparency = 1,
             Text = tabName,
             TextColor3 = CONFIG.SUB_TEXT_COLOR,
-            TextSize = 13,
+            TextSize = 14,
             Font = Enum.Font.GothamMedium,
             TextXAlignment = Enum.TextXAlignment.Left
         })
@@ -756,7 +826,7 @@ function VortexUI:CreateWindow(options)
         if iconName and Icons[iconName] then
             tabIcon = CreateElement("ImageLabel", {
                 Name = "TabIcon",
-                Size = UDim2.new(0, 16, 0, 16),
+                Size = UDim2.new(0, 18, 0, 18),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundTransparency = 1,
@@ -766,11 +836,11 @@ function VortexUI:CreateWindow(options)
             tabIcon.Parent = tabIconContainer
         end
         
-        -- Accent indicator (left bar)
+        -- Modern accent indicator (left bar)
         local accentIndicator = CreateElement("Frame", {
             Name = "AccentIndicator",
-            Size = UDim2.new(0, 3, 0, 18),
-            Position = UDim2.new(0, 0, 0.5, -9),
+            Size = UDim2.new(0, 3, 0, 20),
+            Position = UDim2.new(0, 0, 0.5, -10),
             BackgroundColor3 = CONFIG.ACCENT_COLOR,
             BorderSizePixel = 0,
             Visible = false
@@ -778,11 +848,11 @@ function VortexUI:CreateWindow(options)
         accentIndicator.Parent = tabButton
         AddCorner(accentIndicator, UDim.new(0, 2))
         
-        -- Tab hover effects
+        -- Enhanced tab hover effects
         tabButton.MouseEnter:Connect(function()
             if not accentIndicator.Visible then
                 CreateTween(tabButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-                    BackgroundTransparency = 0.6
+                    BackgroundTransparency = 0.5
                 }):Play()
                 CreateTween(tabLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
                     TextColor3 = CONFIG.TEXT_COLOR
@@ -813,8 +883,8 @@ function VortexUI:CreateWindow(options)
         
         local tabContent = CreateElement("Frame", {
             Name = "TabContent_" .. tabName,
-            Size = UDim2.new(1, -40, 1, -40),
-            Position = UDim2.new(0, 20, 0, 20),
+            Size = UDim2.new(1, -48, 1, -48),
+            Position = UDim2.new(0, 24, 0, 24),
             BackgroundColor3 = CONFIG.PRIMARY_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
@@ -826,7 +896,7 @@ function VortexUI:CreateWindow(options)
             local layout = tabContent:FindFirstChildOfClass("UIListLayout")
             if layout then
                 local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 48)
             end
         end
         
@@ -847,6 +917,7 @@ function VortexUI:CreateWindow(options)
                         BackgroundTransparency = 1
                     }):Play()
                     
+                    -- Reset text and icon colors
                     local otherLabel = otherTab.Button:FindFirstChild("TabLabel")
                     if otherLabel then
                         CreateTween(otherLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
@@ -871,7 +942,7 @@ function VortexUI:CreateWindow(options)
                     
                     otherTab.Content.Visible = false
                     otherTab.AccentIndicator.Visible = false
-                    otherTab.AccentIndicator.Size = UDim2.new(0, 3, 0, 18)
+                    otherTab.AccentIndicator.Size = UDim2.new(0, 3, 0, 20)
                     otherTab.AccentIndicator.BackgroundTransparency = 0
                 end
             end
@@ -887,6 +958,7 @@ function VortexUI:CreateWindow(options)
                 BackgroundTransparency = 0.7
             }):Play()
             
+            -- Active state colors
             CreateTween(tabLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
                 TextColor3 = CONFIG.TEXT_COLOR
             }):Play()
@@ -900,8 +972,8 @@ function VortexUI:CreateWindow(options)
             accentIndicator.Visible = true
             accentIndicator.Size = UDim2.new(0, 3, 0, 0)
             accentIndicator.BackgroundTransparency = 1
-            CreateTween(accentIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 3, 0, 18),
+            CreateTween(accentIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 3, 0, 20),
                 BackgroundTransparency = 0
             }):Play()
             
@@ -910,7 +982,7 @@ function VortexUI:CreateWindow(options)
         
         local tabLayout = CreateElement("UIListLayout", {
             SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 10)
+            Padding = UDim.new(0, 12)
         })
         tabLayout.Parent = tabContent
         
@@ -924,19 +996,19 @@ function VortexUI:CreateWindow(options)
             Elements = {}
         }
         
-        -- Improved Button with cleaner styling
+        -- Enhanced Button with modern styling
         function tab:CreateButton(options)
             local buttonName = options.Name or "Button"
             local callback = options.Callback or function() end
             
             local button = CreateElement("TextButton", {
                 Name = buttonName,
-                Size = UDim2.new(0, 160, 0, 38),
+                Size = UDim2.new(0, 180, 0, 42),
                 BackgroundColor3 = CONFIG.ACCENT_COLOR,
                 BorderSizePixel = 0,
                 Text = buttonName,
                 TextColor3 = Color3.new(1, 1, 1),
-                TextSize = 13,
+                TextSize = 14,
                 Font = Enum.Font.GothamSemibold,
                 AutoButtonColor = false
             })
@@ -944,25 +1016,44 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(button, CONFIG.CORNER_RADIUS)
             
+            -- Subtle inner shadow/depth
+            local buttonGradient = AddGradient(button, 
+                Color3.fromRGB(
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.R * 255 + 15)),
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.G * 255 + 15)),
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.B * 255 + 15))
+                ),
+                CONFIG.ACCENT_COLOR, 
+                180
+            )
+            
+            button.BackgroundTransparency = 1
+            CreateTween(button, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+                BackgroundTransparency = 0
+            }):Play()
+            
             button.MouseEnter:Connect(function()
                 CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-                    BackgroundColor3 = CONFIG.ACCENT_HOVER
+                    BackgroundColor3 = CONFIG.ACCENT_HOVER,
+                    Size = UDim2.new(0, 184, 0, 42)
                 }):Play()
             end)
             
             button.MouseLeave:Connect(function()
                 CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-                    BackgroundColor3 = CONFIG.ACCENT_COLOR
+                    BackgroundColor3 = CONFIG.ACCENT_COLOR,
+                    Size = UDim2.new(0, 180, 0, 42)
                 }):Play()
             end)
             
+            -- Click ripple effect
             button.MouseButton1Click:Connect(function()
-                CreateTween(button, TweenInfo.new(0.08), {
-                    Size = UDim2.new(0, 156, 0, 36)
+                CreateTween(button, TweenInfo.new(0.1), {
+                    Size = UDim2.new(0, 176, 0, 40)
                 }):Play()
-                task.wait(0.08)
-                CreateTween(button, TweenInfo.new(0.12, Enum.EasingStyle.Back), {
-                    Size = UDim2.new(0, 160, 0, 38)
+                task.wait(0.1)
+                CreateTween(button, TweenInfo.new(0.15, Enum.EasingStyle.Back), {
+                    Size = UDim2.new(0, 180, 0, 42)
                 }):Play()
                 callback()
             end)
@@ -979,11 +1070,10 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
-        -- Section divider
         function tab:CreateSection(title)
             local sectionFrame = CreateElement("Frame", {
                 Name = "Section_" .. (title or ""),
-                Size = UDim2.new(1, 0, 0, 32),
+                Size = UDim2.new(1, 0, 0, 36),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0
             })
@@ -991,70 +1081,112 @@ function VortexUI:CreateWindow(options)
             
             local leftLine = CreateElement("Frame", {
                 Name = "LeftLine",
-                Size = UDim2.new(0.3, -8, 0, 1),
+                Size = UDim2.new(0.3, -10, 0, 1),
                 Position = UDim2.new(0, 0, 0.5, 0),
                 BackgroundColor3 = CONFIG.DIVIDER_COLOR,
                 BorderSizePixel = 0
             })
             leftLine.Parent = sectionFrame
             
-            local sectionLabel = CreateElement("TextLabel", {
-                Name = "SectionLabel",
+            local titleLabel = CreateElement("TextLabel", {
+                Name = "Title",
                 Size = UDim2.new(0.4, 0, 1, 0),
                 Position = UDim2.new(0.3, 0, 0, 0),
                 BackgroundTransparency = 1,
-                Text = title or "Section",
+                Text = title or "",
                 TextColor3 = CONFIG.MUTED_COLOR,
-                TextSize = 11,
+                TextSize = 12,
                 Font = Enum.Font.GothamMedium,
-                TextTransparency = 0.2
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextYAlignment = Enum.TextYAlignment.Center
             })
-            sectionLabel.Parent = sectionFrame
+            titleLabel.Parent = sectionFrame
             
             local rightLine = CreateElement("Frame", {
                 Name = "RightLine",
-                Size = UDim2.new(0.3, -8, 0, 1),
-                Position = UDim2.new(0.7, 8, 0.5, 0),
+                Size = UDim2.new(0.3, -10, 0, 1),
+                Position = UDim2.new(0.7, 10, 0.5, 0),
                 BackgroundColor3 = CONFIG.DIVIDER_COLOR,
                 BorderSizePixel = 0
             })
             rightLine.Parent = sectionFrame
             
+            local element = {}
+            function element:Set(newTitle)
+                if newTitle then
+                    titleLabel.Text = newTitle
+                end
+            end
+            
             task.wait()
             updateCanvasSize()
+            
+            return element
         end
         
-        -- Paragraph
-        function tab:CreateParagraph(options)
-            local title = options.Title or "Title"
-            local content = options.Content or "Content"
+        function tab:CreateLabel(text, color, ignoreTheme)
+            local labelText = text or "Label"
+            local textColor = color or (ignoreTheme and Color3.fromRGB(255, 255, 255) or CONFIG.TEXT_COLOR)
+            
+            local label = CreateElement("TextLabel", {
+                Name = "Label_" .. labelText,
+                Size = UDim2.new(1, 0, 0, 24),
+                BackgroundTransparency = 1,
+                Text = labelText,
+                TextColor3 = textColor,
+                TextSize = 14,
+                Font = Enum.Font.GothamMedium,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center
+            })
+            label.Parent = tabContent
+            
+            local element = {}
+            function element:Set(newText, newColor, newIgnoreTheme)
+                if newText then label.Text = newText end
+                if newColor ~= nil then 
+                    label.TextColor3 = newColor
+                elseif newIgnoreTheme ~= nil then
+                    label.TextColor3 = newIgnoreTheme and Color3.fromRGB(255, 255, 255) or CONFIG.TEXT_COLOR
+                end
+            end
+            
+            task.wait()
+            updateCanvasSize()
+            
+            return element
+        end
+        
+        function tab:CreateParagraph(initialData)
+            initialData = initialData or {}
+            local title = initialData.Title or ""
+            local content = initialData.Content or ""
             
             local paragraphFrame = CreateElement("Frame", {
-                Name = "Paragraph",
-                Size = UDim2.new(1, 0, 0, 80),
+                Name = "ParagraphFrame",
+                Size = UDim2.new(1, 0, 0, 0),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
             paragraphFrame.Parent = tabContent
-            
             AddCorner(paragraphFrame, CONFIG.CORNER_RADIUS)
             
             local paragraphPadding = CreateElement("UIPadding", {
                 PaddingTop = UDim.new(0, 14),
-                PaddingLeft = UDim.new(0, 14),
-                PaddingRight = UDim.new(0, 14),
-                PaddingBottom = UDim.new(0, 14)
+                PaddingBottom = UDim.new(0, 14),
+                PaddingLeft = UDim.new(0, 16),
+                PaddingRight = UDim.new(0, 16)
             })
             paragraphPadding.Parent = paragraphFrame
             
             local titleLabel = CreateElement("TextLabel", {
                 Name = "Title",
-                Size = UDim2.new(1, 0, 0, 18),
+                Size = UDim2.new(1, 0, 0, 20),
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 Text = title,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
+                TextSize = 15,
                 Font = Enum.Font.GothamBold,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
@@ -1063,11 +1195,11 @@ function VortexUI:CreateWindow(options)
             local contentLabel = CreateElement("TextLabel", {
                 Name = "Content",
                 Size = UDim2.new(1, 0, 0, 0),
-                Position = UDim2.new(0, 0, 0, 24),
+                Position = UDim2.new(0, 0, 0, 26),
                 BackgroundTransparency = 1,
                 Text = content,
                 TextColor3 = CONFIG.SUB_TEXT_COLOR,
-                TextSize = 12,
+                TextSize = 13,
                 Font = Enum.Font.Gotham,
                 TextWrapped = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
@@ -1078,7 +1210,7 @@ function VortexUI:CreateWindow(options)
             local function updateSize()
                 local contentSize = contentLabel.TextBounds
                 contentLabel.Size = UDim2.new(1, 0, 0, contentSize.Y)
-                paragraphFrame.Size = UDim2.new(1, 0, 0, contentSize.Y + 52)
+                paragraphFrame.Size = UDim2.new(1, 0, 0, contentSize.Y + 54)
             end
             
             contentLabel:GetPropertyChangedSignal("Text"):Connect(updateSize)
@@ -1099,17 +1231,18 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
-        -- Improved Toggle with modern pill design
+        -- Enhanced Toggle with modern pill design
         function tab:CreateToggle(options)
             local toggleName = options.Name or "Toggle"
             local currentValue = options.CurrentValue or false
             local flag = options.Flag or toggleName
             local callback = options.Callback or function() end
             local isLocked = options.IsLocked or false
+            local tooltip = options.Tooltip or nil
             
             local toggleFrame = CreateElement("Frame", {
                 Name = "ToggleFrame_" .. toggleName,
-                Size = UDim2.new(1, 0, 0, 44),
+                Size = UDim2.new(1, 0, 0, 48),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1117,24 +1250,29 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(toggleFrame, CONFIG.CORNER_RADIUS)
             
+            toggleFrame.BackgroundTransparency = 1
+            CreateTween(toggleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+                BackgroundTransparency = 0
+            }):Play()
+            
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, -70, 1, 0),
-                Position = UDim2.new(0, 14, 0, 0),
+                Size = UDim2.new(1, -80, 1, 0),
+                Position = UDim2.new(0, 16, 0, 0),
                 BackgroundTransparency = 1,
                 Text = toggleName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 13,
+                TextSize = 14,
                 Font = Enum.Font.GothamMedium,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = toggleFrame
             
-            -- Modern pill toggle
+            -- Modern pill-shaped toggle
             local toggleButton = CreateElement("TextButton", {
                 Name = "ToggleButton",
-                Size = UDim2.new(0, 44, 0, 24),
-                Position = UDim2.new(1, -58, 0.5, -12),
+                Size = UDim2.new(0, 48, 0, 26),
+                Position = UDim2.new(1, -64, 0.5, -13),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
                 Text = "",
@@ -1142,12 +1280,13 @@ function VortexUI:CreateWindow(options)
             })
             toggleButton.Parent = toggleFrame
             
-            AddCorner(toggleButton, UDim.new(0, 12))
+            AddCorner(toggleButton, UDim.new(0, 13))
+            AddStroke(toggleButton, 1, CONFIG.BORDER_COLOR, 0.5)
             
             local toggleIndicator = CreateElement("Frame", {
                 Name = "Indicator",
-                Size = UDim2.new(0, 18, 0, 18),
-                Position = UDim2.new(0, 3, 0.5, -9),
+                Size = UDim2.new(0, 20, 0, 20),
+                Position = UDim2.new(0, 3, 0.5, -10),
                 BackgroundColor3 = CONFIG.TEXT_COLOR,
                 BorderSizePixel = 0
             })
@@ -1160,19 +1299,19 @@ function VortexUI:CreateWindow(options)
             
             local function updateToggle(enabled)
                 if enabled then
-                    CreateTween(toggleButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
+                    CreateTween(toggleButton, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
                         BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.ACCENT_COLOR
                     }):Play()
-                    CreateTween(toggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(0, 23, 0.5, -9),
+                    CreateTween(toggleIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(0, 25, 0.5, -10),
                         BackgroundColor3 = Color3.new(1, 1, 1)
                     }):Play()
                 else
-                    CreateTween(toggleButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
+                    CreateTween(toggleButton, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
                         BackgroundColor3 = isLocked and Color3.fromRGB(50, 50, 55) or CONFIG.INPUT_COLOR
                     }):Play()
-                    CreateTween(toggleIndicator, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(0, 3, 0.5, -9),
+                    CreateTween(toggleIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(0, 3, 0.5, -10),
                         BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
                 end
@@ -1223,7 +1362,7 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
-        -- Improved Slider with refined track design
+        -- Enhanced Slider with modern track and thumb
         function tab:CreateSlider(options)
             local sliderName = options.Name or "Slider"
             local range = options.Range or {0, 100}
@@ -1235,7 +1374,7 @@ function VortexUI:CreateWindow(options)
             
             local sliderFrame = CreateElement("Frame", {
                 Name = "SliderFrame_" .. sliderName,
-                Size = UDim2.new(1, 0, 0, 58),
+                Size = UDim2.new(1, 0, 0, 64),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1245,22 +1384,22 @@ function VortexUI:CreateWindow(options)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(0.7, -14, 0, 18),
-                Position = UDim2.new(0, 14, 0, 10),
+                Size = UDim2.new(0.7, -16, 0, 20),
+                Position = UDim2.new(0, 16, 0, 10),
                 BackgroundTransparency = 1,
                 Text = sliderName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 13,
+                TextSize = 14,
                 Font = Enum.Font.GothamMedium,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = sliderFrame
             
-            -- Value display
+            -- Value display with accent background
             local valueDisplay = CreateElement("Frame", {
                 Name = "ValueDisplay",
-                Size = UDim2.new(0, 52, 0, 20),
-                Position = UDim2.new(1, -66, 0, 9),
+                Size = UDim2.new(0, 60, 0, 22),
+                Position = UDim2.new(1, -76, 0, 8),
                 BackgroundColor3 = CONFIG.ACCENT_COLOR,
                 BackgroundTransparency = 0.85,
                 BorderSizePixel = 0
@@ -1274,16 +1413,16 @@ function VortexUI:CreateWindow(options)
                 BackgroundTransparency = 1,
                 Text = currentValue .. suffix,
                 TextColor3 = CONFIG.ACCENT_COLOR,
-                TextSize = 11,
+                TextSize = 12,
                 Font = Enum.Font.GothamBold
             })
             valueLabel.Parent = valueDisplay
             
-            -- Slider track
+            -- Modern slider track
             local sliderTrack = CreateElement("Frame", {
                 Name = "SliderTrack",
-                Size = UDim2.new(1, -28, 0, 5),
-                Position = UDim2.new(0, 14, 0, 38),
+                Size = UDim2.new(1, -32, 0, 6),
+                Position = UDim2.new(0, 16, 0, 42),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0
             })
@@ -1302,11 +1441,11 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(sliderFill, UDim.new(0, 3))
             
-            -- Slider thumb
+            -- Modern slider thumb with glow
             local sliderButton = CreateElement("TextButton", {
                 Name = "SliderButton",
-                Size = UDim2.new(0, 16, 0, 16),
-                Position = UDim2.new(0, -8, 0.5, -8),
+                Size = UDim2.new(0, 18, 0, 18),
+                Position = UDim2.new(0, -9, 0.5, -9),
                 BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
                 Text = "",
@@ -1316,6 +1455,20 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(sliderButton, UDim.new(1, 0))
             
+            -- Thumb glow
+            local thumbGlow = CreateElement("Frame", {
+                Name = "ThumbGlow",
+                Size = UDim2.new(1, 8, 1, 8),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = CONFIG.ACCENT_COLOR,
+                BackgroundTransparency = 0.7,
+                BorderSizePixel = 0,
+                ZIndex = sliderButton.ZIndex - 1
+            })
+            thumbGlow.Parent = sliderButton
+            AddCorner(thumbGlow, UDim.new(1, 0))
+            
             ToggleStates[flag] = currentValue
             
             local function updateSlider(value)
@@ -1324,11 +1477,11 @@ function VortexUI:CreateWindow(options)
                 
                 local percentage = (value - range[1]) / (range[2] - range[1])
                 
-                CreateTween(sliderFill, TweenInfo.new(0.08), {
+                CreateTween(sliderFill, TweenInfo.new(0.1), {
                     Size = UDim2.new(percentage, 0, 1, 0)
                 }):Play()
-                CreateTween(sliderButton, TweenInfo.new(0.08), {
-                    Position = UDim2.new(percentage, -8, 0.5, -8)
+                CreateTween(sliderButton, TweenInfo.new(0.1), {
+                    Position = UDim2.new(percentage, -9, 0.5, -9)
                 }):Play()
                 
                 valueLabel.Text = value .. suffix
@@ -1342,8 +1495,11 @@ function VortexUI:CreateWindow(options)
             
             sliderButton.MouseButton1Down:Connect(function()
                 dragging = true
-                CreateTween(sliderButton, TweenInfo.new(0.1), {
-                    Size = UDim2.new(0, 20, 0, 20)
+                CreateTween(sliderButton, TweenInfo.new(0.15), {
+                    Size = UDim2.new(0, 22, 0, 22)
+                }):Play()
+                CreateTween(thumbGlow, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.5
                 }):Play()
             end)
             
@@ -1359,8 +1515,11 @@ function VortexUI:CreateWindow(options)
             local dragEndConnection = UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = false
-                    CreateTween(sliderButton, TweenInfo.new(0.1), {
-                        Size = UDim2.new(0, 16, 0, 16)
+                    CreateTween(sliderButton, TweenInfo.new(0.15), {
+                        Size = UDim2.new(0, 18, 0, 18)
+                    }):Play()
+                    CreateTween(thumbGlow, TweenInfo.new(0.15), {
+                        BackgroundTransparency = 0.7
                     }):Play()
                 end
             end)
@@ -1380,7 +1539,7 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
-        -- Completely redesigned dropdown with cleaner styling
+        -- Completely redesigned modern dropdown
         function tab:CreateDropdown(options)
             local dropdownName = options.Name or "Dropdown"
             local optionsList = options.Options or {}
@@ -1391,36 +1550,36 @@ function VortexUI:CreateWindow(options)
             
             local dropdownFrame = CreateElement("Frame", {
                 Name = "DropdownFrame_" .. dropdownName,
-                Size = UDim2.new(1, 0, 0, 64),
+                Size = UDim2.new(1, 0, 0, 70),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
-                BorderSizePixel = 0,
-                ClipsDescendants = false,
-                ZIndex = 30
+                BorderSizePixel = 0
             })
             dropdownFrame.Parent = tabContent
+            dropdownFrame.ClipsDescendants = false
+            dropdownFrame.ZIndex = 30
             
             AddCorner(dropdownFrame, CONFIG.CORNER_RADIUS)
             
-            -- Dropdown label
+            -- Dropdown label above
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, -28, 0, 18),
-                Position = UDim2.new(0, 14, 0, 10),
+                Size = UDim2.new(1, -32, 0, 20),
+                Position = UDim2.new(0, 16, 0, 10),
                 BackgroundTransparency = 1,
                 Text = dropdownName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 13,
+                TextSize = 14,
                 Font = Enum.Font.GothamMedium,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ZIndex = 31
             })
             label.Parent = dropdownFrame
             
-            -- Dropdown button
+            -- Modern dropdown button with enhanced styling
             local dropdownButton = CreateElement("TextButton", {
                 Name = "DropdownButton",
-                Size = UDim2.new(1, -28, 0, 32),
-                Position = UDim2.new(0, 14, 0, 26),
+                Size = UDim2.new(1, -32, 0, 36),
+                Position = UDim2.new(0, 16, 0, 28),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
                 Text = "",
@@ -1430,17 +1589,17 @@ function VortexUI:CreateWindow(options)
             dropdownButton.Parent = dropdownFrame
             
             AddCorner(dropdownButton, CONFIG.CORNER_RADIUS_SM)
-            local buttonStroke = AddStroke(dropdownButton, 1, CONFIG.BORDER_COLOR, 0.5)
+            local buttonStroke = AddStroke(dropdownButton, 1, CONFIG.BORDER_COLOR, 0.4)
             
             -- Selected text
             local selectedText = CreateElement("TextLabel", {
                 Name = "SelectedText",
-                Size = UDim2.new(1, -36, 1, 0),
-                Position = UDim2.new(0, 12, 0, 0),
+                Size = UDim2.new(1, -40, 1, 0),
+                Position = UDim2.new(0, 14, 0, 0),
                 BackgroundTransparency = 1,
-                Text = currentOption or "Select...",
+                Text = currentOption or "Select option...",
                 TextColor3 = currentOption and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR,
-                TextSize = 12,
+                TextSize = 13,
                 Font = Enum.Font.Gotham,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1448,29 +1607,37 @@ function VortexUI:CreateWindow(options)
             })
             selectedText.Parent = dropdownButton
             
-            -- Chevron
+            -- Modern chevron icon
+            local chevronContainer = CreateElement("Frame", {
+                Name = "ChevronContainer",
+                Size = UDim2.new(0, 24, 0, 24),
+                Position = UDim2.new(1, -30, 0.5, -12),
+                BackgroundTransparency = 1,
+                ZIndex = 32
+            })
+            chevronContainer.Parent = dropdownButton
+            
             local chevron = CreateElement("TextLabel", {
                 Name = "Chevron",
-                Size = UDim2.new(0, 20, 1, 0),
-                Position = UDim2.new(1, -28, 0, 0),
+                Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Text = "▾",
-                TextColor3 = CONFIG.MUTED_COLOR,
-                TextSize = 12,
+                TextColor3 = CONFIG.SUB_TEXT_COLOR,
+                TextSize = 14,
                 Font = Enum.Font.GothamBold,
                 ZIndex = 33
             })
-            chevron.Parent = dropdownButton
+            chevron.Parent = chevronContainer
             
-            -- Options list
+            -- Modern options list with enhanced styling
             local optionsListFrame = CreateElement("ScrollingFrame", {
                 Name = "OptionsList",
-                Size = UDim2.new(1, -28, 0, 0),
-                Position = UDim2.new(0, 14, 0, 62),
+                Size = UDim2.new(1, -32, 0, 0),
+                Position = UDim2.new(0, 16, 0, 68),
                 BackgroundColor3 = CONFIG.SECONDARY_COLOR,
                 BorderSizePixel = 0,
                 Visible = false,
-                ScrollBarThickness = 2,
+                ScrollBarThickness = 3,
                 ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
                 ScrollBarImageTransparency = 0.5,
                 ZIndex = 100,
@@ -1482,125 +1649,136 @@ function VortexUI:CreateWindow(options)
             optionsListFrame.ClipsDescendants = true
             
             AddCorner(optionsListFrame, CONFIG.CORNER_RADIUS_SM)
-            AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR, 0.4)
+            local listStroke = AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR, 0.3)
             
             local listPadding = CreateElement("UIPadding", {
-                PaddingTop = UDim.new(0, 4),
-                PaddingBottom = UDim.new(0, 4),
-                PaddingLeft = UDim.new(0, 4),
-                PaddingRight = UDim.new(0, 4)
+                PaddingTop = UDim.new(0, 6),
+                PaddingBottom = UDim.new(0, 6),
+                PaddingLeft = UDim.new(0, 6),
+                PaddingRight = UDim.new(0, 6)
             })
             listPadding.Parent = optionsListFrame
             
-            local listLayout = CreateElement("UIListLayout", {
+            local optionsLayout = CreateElement("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = UDim.new(0, 2)
+                Padding = UDim.new(0, 4)
             })
-            listLayout.Parent = optionsListFrame
+            optionsLayout.Parent = optionsListFrame
+            
+            ToggleStates[flag] = currentOption
             
             local isOpen = false
-            local selectedOptions = multipleOptions and {} or currentOption
-            
-            if multipleOptions and currentOption then
-                if type(currentOption) == "table" then
-                    selectedOptions = currentOption
-                else
-                    selectedOptions = {currentOption}
+            local selectedOptions
+            if multipleOptions then
+                selectedOptions = {}
+                if currentOption ~= nil then
+                    table.insert(selectedOptions, currentOption)
                 end
+            else
+                selectedOptions = currentOption
             end
             
-            ToggleStates[flag] = selectedOptions
-            
-            local function updateCanvasSizeDropdown()
-                local totalHeight = 0
-                for _, child in pairs(optionsListFrame:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        totalHeight = totalHeight + child.Size.Y.Offset + 2
-                    end
-                end
-                totalHeight = totalHeight + 8
-                optionsListFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-                return math.min(totalHeight, 160)
-            end
+            local outsideConn = nil
             
             local function updateDropdownText()
                 if multipleOptions then
-                    if #selectedOptions == 0 then
-                        selectedText.Text = "Select..."
-                        selectedText.TextColor3 = CONFIG.MUTED_COLOR
-                    elseif #selectedOptions == 1 then
-                        selectedText.Text = selectedOptions[1]
-                        selectedText.TextColor3 = CONFIG.TEXT_COLOR
-                    else
-                        selectedText.Text = #selectedOptions .. " selected"
-                        selectedText.TextColor3 = CONFIG.ACCENT_COLOR
-                    end
+                    local text = #selectedOptions > 0 and table.concat(selectedOptions, ", ") or "Select options..."
+                    selectedText.Text = text
+                    selectedText.TextColor3 = #selectedOptions > 0 and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR
                 else
-                    if selectedOptions then
-                        selectedText.Text = selectedOptions
-                        selectedText.TextColor3 = CONFIG.TEXT_COLOR
-                    else
-                        selectedText.Text = "Select..."
-                        selectedText.TextColor3 = CONFIG.MUTED_COLOR
-                    end
+                    selectedText.Text = selectedOptions or "Select option..."
+                    selectedText.TextColor3 = selectedOptions and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR
                 end
             end
             
+            local function updateCanvasSizeDropdown()
+                local contentY = optionsLayout.AbsoluteContentSize.Y + 12
+                optionsListFrame.CanvasSize = UDim2.new(0, 0, 0, contentY)
+                return math.min(contentY, 160)
+            end
+            
+            optionsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                local openHeight = updateCanvasSizeDropdown()
+                if isOpen then
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, openHeight)
+                end
+            end)
+            
+            local function isPointInGui(guiObject, point)
+                local pos = guiObject.AbsolutePosition
+                local size = guiObject.AbsoluteSize
+                return point.X >= pos.X and point.X <= (pos.X + size.X) and point.Y >= pos.Y and point.Y <= (pos.Y + size.Y)
+            end
+            
             local function setOpen(open)
+                if isOpen == open then return end
                 isOpen = open
                 
+                if outsideConn then
+                    outsideConn:Disconnect()
+                    outsideConn = nil
+                end
+                
                 if isOpen then
-                    local listHeight = updateCanvasSizeDropdown()
+                    local openHeight = updateCanvasSizeDropdown()
                     optionsListFrame.Visible = true
-                    optionsListFrame.Size = UDim2.new(1, -28, 0, 0)
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, 0)
+                    optionsListFrame.BackgroundTransparency = 1
                     
-                    CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-                        Size = UDim2.new(1, -28, 0, listHeight)
+                    dropdownFrame.ZIndex = 100
+                    optionsListFrame.ZIndex = 101
+                    label.ZIndex = 102
+                    dropdownButton.ZIndex = 102
+                    selectedText.ZIndex = 103
+                    chevronContainer.ZIndex = 103
+                    chevron.ZIndex = 104
+                    
+                    CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, -32, 0, openHeight),
+                        BackgroundTransparency = 0
                     }):Play()
                     
-                    CreateTween(dropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-                        Size = UDim2.new(1, 0, 0, 68 + listHeight)
-                    }):Play()
-                    
-                    CreateTween(chevron, TweenInfo.new(0.15), {
+                    CreateTween(chevronContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
                         Rotation = 180
                     }):Play()
                     
                     CreateTween(buttonStroke, TweenInfo.new(0.15), {
-                        Color = CONFIG.ACCENT_COLOR,
-                        Transparency = 0
+                        Color = CONFIG.ACCENT_COLOR
                     }):Play()
                     
-                    dropdownFrame.ZIndex = 50
-                    label.ZIndex = 51
-                    dropdownButton.ZIndex = 51
-                    selectedText.ZIndex = 52
-                    chevron.ZIndex = 53
+                    outsideConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                        if gameProcessed then return end
+                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+                        local p = UserInputService:GetMouseLocation()
+                        if not isPointInGui(dropdownFrame, p) and not isPointInGui(optionsListFrame, p) then
+                            setOpen(false)
+                        end
+                    end)
+                    TrackConnection(outsideConn, window)
                 else
-                    CreateTween(optionsListFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {
-                        Size = UDim2.new(1, -28, 0, 0)
-                    }):Play()
+                    local tween = CreateTween(optionsListFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                        Size = UDim2.new(1, -32, 0, 0),
+                        BackgroundTransparency = 1
+                    })
+                    tween:Play()
                     
-                    CreateTween(dropdownFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {
-                        Size = UDim2.new(1, 0, 0, 64)
-                    }):Play()
-                    
-                    CreateTween(chevron, TweenInfo.new(0.15), {
+                    CreateTween(chevronContainer, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {
                         Rotation = 0
                     }):Play()
                     
                     CreateTween(buttonStroke, TweenInfo.new(0.15), {
-                        Color = CONFIG.BORDER_COLOR,
-                        Transparency = 0.5
+                        Color = CONFIG.BORDER_COLOR
                     }):Play()
                     
-                    task.delay(0.15, function()
+                    tween.Completed:Connect(function()
                         if not isOpen then
                             optionsListFrame.Visible = false
                             dropdownFrame.ZIndex = 30
+                            optionsListFrame.ZIndex = 50
                             label.ZIndex = 31
                             dropdownButton.ZIndex = 31
                             selectedText.ZIndex = 32
+                            chevronContainer.ZIndex = 32
                             chevron.ZIndex = 33
                         end
                     end)
@@ -1609,13 +1787,13 @@ function VortexUI:CreateWindow(options)
             
             updateDropdownText()
             
-            -- Create option buttons
+            -- Create modern option buttons
             local function createOptionButton(i, option)
                 local isSelected = multipleOptions and table.find(selectedOptions, option) or selectedOptions == option
                 
                 local optionButton = CreateElement("TextButton", {
                     Name = "Option_" .. i,
-                    Size = UDim2.new(1, 0, 0, 28),
+                    Size = UDim2.new(1, 0, 0, 32),
                     BackgroundColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.PANEL_COLOR,
                     BackgroundTransparency = isSelected and 0.85 or 0,
                     BorderSizePixel = 0,
@@ -1628,26 +1806,26 @@ function VortexUI:CreateWindow(options)
                 AddCorner(optionButton, CONFIG.CORNER_RADIUS_SM)
                 
                 local optionLabel = CreateElement("TextLabel", {
-                    Size = UDim2.new(1, -28, 1, 0),
-                    Position = UDim2.new(0, 10, 0, 0),
+                    Size = UDim2.new(1, -24, 1, 0),
+                    Position = UDim2.new(0, 12, 0, 0),
                     BackgroundTransparency = 1,
                     Text = option,
                     TextColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR,
-                    TextSize = 12,
+                    TextSize = 13,
                     Font = isSelected and Enum.Font.GothamMedium or Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     ZIndex = 103
                 })
                 optionLabel.Parent = optionButton
                 
-                -- Checkmark
+                -- Checkmark for selected items
                 local checkmark = CreateElement("TextLabel", {
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(1, -22, 0.5, -7),
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(1, -24, 0.5, -8),
                     BackgroundTransparency = 1,
                     Text = "✓",
                     TextColor3 = CONFIG.ACCENT_COLOR,
-                    TextSize = 10,
+                    TextSize = 12,
                     Font = Enum.Font.GothamBold,
                     Visible = isSelected,
                     ZIndex = 103
@@ -1655,11 +1833,11 @@ function VortexUI:CreateWindow(options)
                 checkmark.Parent = optionButton
                 
                 local function updateOptionStyle(selected)
-                    CreateTween(optionButton, TweenInfo.new(0.12), {
+                    CreateTween(optionButton, TweenInfo.new(0.15), {
                         BackgroundColor3 = selected and CONFIG.ACCENT_COLOR or CONFIG.PANEL_COLOR,
                         BackgroundTransparency = selected and 0.85 or 0
                     }):Play()
-                    CreateTween(optionLabel, TweenInfo.new(0.12), {
+                    CreateTween(optionLabel, TweenInfo.new(0.15), {
                         TextColor3 = selected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
                     optionLabel.Font = selected and Enum.Font.GothamMedium or Enum.Font.Gotham
@@ -1678,6 +1856,7 @@ function VortexUI:CreateWindow(options)
                         end
                         updateDropdownText()
                     else
+                        -- Update all options
                         for _, child in pairs(optionsListFrame:GetChildren()) do
                             if child:IsA("TextButton") then
                                 local childLabel = child:FindFirstChild("TextLabel")
@@ -1686,11 +1865,11 @@ function VortexUI:CreateWindow(options)
                                     childCheck.Visible = false
                                 end
                                 if childLabel then
-                                    CreateTween(child, TweenInfo.new(0.12), {
+                                    CreateTween(child, TweenInfo.new(0.15), {
                                         BackgroundColor3 = CONFIG.PANEL_COLOR,
                                         BackgroundTransparency = 0
                                     }):Play()
-                                    CreateTween(childLabel, TweenInfo.new(0.12), {
+                                    CreateTween(childLabel, TweenInfo.new(0.15), {
                                         TextColor3 = CONFIG.TEXT_COLOR
                                     }):Play()
                                     childLabel.Font = Enum.Font.Gotham
@@ -1710,7 +1889,7 @@ function VortexUI:CreateWindow(options)
                 
                 optionButton.MouseEnter:Connect(function()
                     if not (multipleOptions and table.find(selectedOptions, option) or selectedOptions == option) then
-                        CreateTween(optionButton, TweenInfo.new(0.08), {
+                        CreateTween(optionButton, TweenInfo.new(0.1), {
                             BackgroundColor3 = CONFIG.INPUT_COLOR
                         }):Play()
                     end
@@ -1719,7 +1898,7 @@ function VortexUI:CreateWindow(options)
                 optionButton.MouseLeave:Connect(function()
                     local selected = multipleOptions and table.find(selectedOptions, option) or selectedOptions == option
                     if not selected then
-                        CreateTween(optionButton, TweenInfo.new(0.08), {
+                        CreateTween(optionButton, TweenInfo.new(0.1), {
                             BackgroundColor3 = CONFIG.PANEL_COLOR
                         }):Play()
                     end
@@ -1734,10 +1913,10 @@ function VortexUI:CreateWindow(options)
             
             updateCanvasSizeDropdown()
             
-            -- Hover effects
+            -- Hover effects for main button
             dropdownButton.MouseEnter:Connect(function()
                 if not isOpen then
-                    CreateTween(dropdownButton, TweenInfo.new(0.12), {
+                    CreateTween(dropdownButton, TweenInfo.new(0.15), {
                         BackgroundColor3 = CONFIG.PANEL_COLOR
                     }):Play()
                 end
@@ -1745,7 +1924,7 @@ function VortexUI:CreateWindow(options)
             
             dropdownButton.MouseLeave:Connect(function()
                 if not isOpen then
-                    CreateTween(dropdownButton, TweenInfo.new(0.12), {
+                    CreateTween(dropdownButton, TweenInfo.new(0.15), {
                         BackgroundColor3 = CONFIG.INPUT_COLOR
                     }):Play()
                 end
@@ -1758,11 +1937,11 @@ function VortexUI:CreateWindow(options)
             WindowInstances[window].Tabs[tabName].Elements[dropdownName] = dropdownFrame
             
             local element = {}
-            function element:Set(opts)
+            function element:Set(options)
                 if multipleOptions then
-                    selectedOptions = type(opts) == "table" and opts or {opts}
+                    selectedOptions = type(options) == "table" and options or {options}
                 else
-                    selectedOptions = type(opts) == "table" and opts[1] or opts
+                    selectedOptions = type(options) == "table" and options[1] or options
                 end
                 updateDropdownText()
                 ToggleStates[flag] = selectedOptions
@@ -1780,14 +1959,14 @@ function VortexUI:CreateWindow(options)
                 end
                 updateCanvasSizeDropdown()
                 if isOpen then
-                    optionsListFrame.Size = UDim2.new(1, -28, 0, updateCanvasSizeDropdown())
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, updateCanvasSizeDropdown())
                 end
             end
             
             return element
         end
         
-        -- Improved Input field
+        -- Enhanced Input field
         function tab:CreateInput(options)
             local inputName = options.Name or "Input"
             local currentValue = options.CurrentValue or ""
@@ -1798,7 +1977,7 @@ function VortexUI:CreateWindow(options)
             
             local inputFrame = CreateElement("Frame", {
                 Name = "InputFrame_" .. inputName,
-                Size = UDim2.new(1, 0, 0, 64),
+                Size = UDim2.new(1, 0, 0, 70),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1808,12 +1987,12 @@ function VortexUI:CreateWindow(options)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, -28, 0, 18),
-                Position = UDim2.new(0, 14, 0, 10),
+                Size = UDim2.new(1, -32, 0, 20),
+                Position = UDim2.new(0, 16, 0, 10),
                 BackgroundTransparency = 1,
                 Text = inputName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 13,
+                TextSize = 14,
                 Font = Enum.Font.GothamMedium,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
@@ -1821,25 +2000,25 @@ function VortexUI:CreateWindow(options)
             
             local textBoxContainer = CreateElement("Frame", {
                 Name = "TextBoxContainer",
-                Size = UDim2.new(1, -28, 0, 32),
-                Position = UDim2.new(0, 14, 0, 26),
+                Size = UDim2.new(1, -32, 0, 36),
+                Position = UDim2.new(0, 16, 0, 28),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0
             })
             textBoxContainer.Parent = inputFrame
             AddCorner(textBoxContainer, CONFIG.CORNER_RADIUS_SM)
-            local inputStroke = AddStroke(textBoxContainer, 1, CONFIG.BORDER_COLOR, 0.5)
+            local inputStroke = AddStroke(textBoxContainer, 1, CONFIG.BORDER_COLOR, 0.4)
             
             local textBox = CreateElement("TextBox", {
                 Name = "TextBox",
-                Size = UDim2.new(1, -20, 1, 0),
-                Position = UDim2.new(0, 10, 0, 0),
+                Size = UDim2.new(1, -24, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
                 BackgroundTransparency = 1,
                 Text = currentValue,
                 PlaceholderText = placeholderText,
                 PlaceholderColor3 = CONFIG.MUTED_COLOR,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 12,
+                TextSize = 13,
                 Font = Enum.Font.Gotham,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false
@@ -1849,21 +2028,25 @@ function VortexUI:CreateWindow(options)
             ToggleStates[flag] = currentValue
             
             textBox.Focused:Connect(function()
-                CreateTween(inputStroke, TweenInfo.new(0.12), {
+                CreateTween(inputStroke, TweenInfo.new(0.15), {
                     Color = CONFIG.ACCENT_COLOR,
                     Transparency = 0
                 }):Play()
-                CreateTween(textBoxContainer, TweenInfo.new(0.12), {
-                    BackgroundColor3 = Color3.fromRGB(50, 50, 62)
+                CreateTween(textBoxContainer, TweenInfo.new(0.15), {
+                    BackgroundColor3 = Color3.fromRGB(
+                        math.min(255, math.max(0, CONFIG.INPUT_COLOR.R * 255 + 8)),
+                        math.min(255, math.max(0, CONFIG.INPUT_COLOR.G * 255 + 8)),
+                        math.min(255, math.max(0, CONFIG.INPUT_COLOR.B * 255 + 8))
+                    )
                 }):Play()
             end)
             
             textBox.FocusLost:Connect(function(enterPressed)
-                CreateTween(inputStroke, TweenInfo.new(0.12), {
+                CreateTween(inputStroke, TweenInfo.new(0.15), {
                     Color = CONFIG.BORDER_COLOR,
-                    Transparency = 0.5
+                    Transparency = 0.4
                 }):Play()
-                CreateTween(textBoxContainer, TweenInfo.new(0.12), {
+                CreateTween(textBoxContainer, TweenInfo.new(0.15), {
                     BackgroundColor3 = CONFIG.INPUT_COLOR
                 }):Play()
                 
@@ -1902,10 +2085,10 @@ function VortexUI:CreateWindow(options)
                 tabIcon.ImageColor3 = CONFIG.ACCENT_COLOR
             end
             accentIndicator.Visible = true
-            accentIndicator.Position = UDim2.new(0, 0, 0.5, -9)
+            accentIndicator.Position = UDim2.new(0, 0, 0.5, -10)
             accentIndicator.BackgroundColor3 = CONFIG.ACCENT_COLOR
             
-            CreateTween(tabContent, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+            CreateTween(tabContent, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {
                 BackgroundTransparency = 0
             }):Play()
             
@@ -1925,7 +2108,7 @@ function VortexUI:CreateWindow(options)
     return window
 end
 
--- Key System Window
+-- Enhanced Key System Window with modern design
 function VortexUI:ShowKeyWindow(callback, keySystemData)
     local function loadSavedKey()
         local success, result = pcall(function()
@@ -1987,7 +2170,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
             child:Destroy()
         end
     end
-    
     local screenGui = CreateElement("ScreenGui", {
         Name = "VortexKeyWindow",
         IgnoreGuiInset = true,
@@ -2027,44 +2209,44 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         end
     end)
     
-    -- Overlay
+    -- Modern overlay
     local overlay = CreateElement("Frame", {
         Name = "Overlay",
         Size = UDim2.new(1, 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.4,
+        BackgroundTransparency = 0.5,
         BorderSizePixel = 0
     })
     overlay.Parent = screenGui
     
+    -- Fade in overlay
     overlay.BackgroundTransparency = 1
-    CreateTween(overlay, TweenInfo.new(0.25), {
-        BackgroundTransparency = 0.4
+    CreateTween(overlay, TweenInfo.new(0.3), {
+        BackgroundTransparency = 0.5
     }):Play()
     
-    -- Key window
+    -- Modern key window with glass effect
     local keyWindow = CreateElement("Frame", {
         Name = "KeyWindow",
-        Size = UDim2.new(0, 360, 0, 300),
-        Position = UDim2.new(0.5, -180, 0.5, -150),
+        Size = UDim2.new(0, 380, 0, 320),
+        Position = UDim2.new(0.5, -190, 0.5, -160),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     keyWindow.Parent = overlay
     
     AddCorner(keyWindow, CONFIG.CORNER_RADIUS_XL)
-    AddStroke(keyWindow, 1, CONFIG.BORDER_COLOR, 0.4)
-    AddDropShadow(keyWindow, 32, 0.5)
+    AddStroke(keyWindow, 1, CONFIG.BORDER_COLOR, 0.5)
     
     -- Animated entrance
     keyWindow.Size = UDim2.new(0, 0, 0, 0)
     keyWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
     keyWindow.BackgroundTransparency = 1
     
-    CreateTween(keyWindow, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 360, 0, 300),
-        Position = UDim2.new(0.5, -180, 0.5, -150),
+    CreateTween(keyWindow, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 380, 0, 320),
+        Position = UDim2.new(0.5, -190, 0.5, -160),
         BackgroundTransparency = 0
     }):Play()
     
@@ -2078,6 +2260,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     headerAccent.Parent = keyWindow
     
+    -- Only round top of header accent
     local accentCorner = Instance.new("UICorner")
     accentCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
     accentCorner.Parent = headerAccent
@@ -2090,11 +2273,20 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     accentCover.Parent = headerAccent
     
-    -- Lock icon
+    -- Add gradient to accent
+    local accentGradient = Instance.new("UIGradient")
+    accentGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
+        ColorSequenceKeypoint.new(1, CONFIG.ACCENT_HOVER)
+    }
+    accentGradient.Rotation = 90
+    accentGradient.Parent = headerAccent
+    
+    -- Lock icon container
     local iconContainer = CreateElement("Frame", {
         Name = "IconContainer",
-        Size = UDim2.new(0, 50, 0, 50),
-        Position = UDim2.new(0.5, -25, 0, 24),
+        Size = UDim2.new(0, 56, 0, 56),
+        Position = UDim2.new(0.5, -28, 0, 28),
         BackgroundColor3 = CONFIG.ACCENT_COLOR,
         BackgroundTransparency = 0.9,
         BorderSizePixel = 0
@@ -2106,47 +2298,47 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "🔐",
-        TextColor3 = CONFIG.ACCENT_COLOR,
-        TextSize = 22,
-        Font = Enum.Font.GothamBold
+        TextSize = 28
     })
     lockIcon.Parent = iconContainer
     
     -- Title
     local titleLabel = CreateElement("TextLabel", {
-        Size = UDim2.new(1, -48, 0, 24),
-        Position = UDim2.new(0, 24, 0, 82),
+        Name = "TitleLabel",
+        Size = UDim2.new(1, -40, 0, 24),
+        Position = UDim2.new(0, 20, 0, 96),
         BackgroundTransparency = 1,
         Text = "Authentication Required",
         TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 16,
+        TextSize = 18,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Center
     })
     titleLabel.Parent = keyWindow
     
-    -- Description
     local descLabel = CreateElement("TextLabel", {
-        Size = UDim2.new(1, -48, 0, 36),
-        Position = UDim2.new(0, 24, 0, 108),
+        Name = "DescLabel",
+        Size = UDim2.new(1, -40, 0, 20),
+        Position = UDim2.new(0, 20, 0, 122),
         BackgroundTransparency = 1,
-        Text = "Enter your access key to continue",
+        Text = "Enter your license key to continue",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = 12,
+        TextSize = 13,
         Font = Enum.Font.Gotham,
-        TextWrapped = true
+        TextXAlignment = Enum.TextXAlignment.Center
     })
     descLabel.Parent = keyWindow
     
-    -- Key input
+    -- Modern key input
     local keyInputFrame = CreateElement("Frame", {
         Name = "KeyInputFrame",
-        Size = UDim2.new(1, -48, 0, 40),
-        Position = UDim2.new(0, 24, 0, 150),
+        Size = UDim2.new(1, -48, 0, 46),
+        Position = UDim2.new(0, 24, 0, 158),
         BackgroundColor3 = CONFIG.INPUT_COLOR,
         BorderSizePixel = 0
     })
     keyInputFrame.Parent = keyWindow
+    
     AddCorner(keyInputFrame, CONFIG.CORNER_RADIUS)
     local keyInputStroke = AddStroke(keyInputFrame, 1, CONFIG.BORDER_COLOR, 0.4)
     
@@ -2156,25 +2348,26 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
         Text = "",
-        PlaceholderText = "Enter key...",
+        PlaceholderText = "Enter your license key...",
         PlaceholderColor3 = CONFIG.MUTED_COLOR,
         TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 13,
+        TextSize = 14,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false
     })
     keyInput.Parent = keyInputFrame
     
+    -- Focus effects
     keyInput.Focused:Connect(function()
-        CreateTween(keyInputStroke, TweenInfo.new(0.12), {
+        CreateTween(keyInputStroke, TweenInfo.new(0.15), {
             Color = CONFIG.ACCENT_COLOR,
             Transparency = 0
         }):Play()
     end)
     
     keyInput.FocusLost:Connect(function()
-        CreateTween(keyInputStroke, TweenInfo.new(0.12), {
+        CreateTween(keyInputStroke, TweenInfo.new(0.15), {
             Color = CONFIG.BORDER_COLOR,
             Transparency = 0.4
         }):Play()
@@ -2182,27 +2375,28 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     -- Status label
     local statusLabel = CreateElement("TextLabel", {
+        Name = "StatusLabel",
         Size = UDim2.new(1, -48, 0, 18),
-        Position = UDim2.new(0, 24, 0, 196),
+        Position = UDim2.new(0, 24, 0, 210),
         BackgroundTransparency = 1,
         Text = "",
         TextColor3 = CONFIG.ERROR_COLOR,
-        TextSize = 11,
+        TextSize = 12,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Center
     })
     statusLabel.Parent = keyWindow
     
-    -- Submit button
+    -- Modern submit button
     local submitButton = CreateElement("TextButton", {
         Name = "VortexSubmitButton",
-        Size = UDim2.new(1, -48, 0, 40),
-        Position = UDim2.new(0, 24, 0, 220),
+        Size = UDim2.new(1, -48, 0, 44),
+        Position = UDim2.new(0, 24, 0, 236),
         BackgroundColor3 = CONFIG.ACCENT_COLOR,
         BorderSizePixel = 0,
         Text = "Authenticate",
         TextColor3 = Color3.new(1, 1, 1),
-        TextSize = 13,
+        TextSize = 14,
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false
     })
@@ -2210,14 +2404,15 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     AddCorner(submitButton, CONFIG.CORNER_RADIUS)
     
+    -- Button hover effects
     submitButton.MouseEnter:Connect(function()
-        CreateTween(submitButton, TweenInfo.new(0.12), {
+        CreateTween(submitButton, TweenInfo.new(0.15), {
             BackgroundColor3 = CONFIG.ACCENT_HOVER
         }):Play()
     end)
     
     submitButton.MouseLeave:Connect(function()
-        CreateTween(submitButton, TweenInfo.new(0.12), {
+        CreateTween(submitButton, TweenInfo.new(0.15), {
             BackgroundColor3 = CONFIG.ACCENT_COLOR
         }):Play()
     end)
@@ -2225,14 +2420,14 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     -- Close button
     local closeButton = CreateElement("TextButton", {
         Name = "CloseButton",
-        Size = UDim2.new(0, 28, 0, 28),
-        Position = UDim2.new(1, -38, 0, 10),
+        Size = UDim2.new(0, 32, 0, 32),
+        Position = UDim2.new(1, -44, 0, 12),
         BackgroundColor3 = CONFIG.PANEL_COLOR,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Text = "×",
-        TextColor3 = CONFIG.MUTED_COLOR,
-        TextSize = 18,
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 20,
         Font = Enum.Font.GothamBold,
         AutoButtonColor = false
     })
@@ -2240,21 +2435,21 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     AddCorner(closeButton, UDim.new(1, 0))
     
     closeButton.MouseEnter:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(0.12), {
+        CreateTween(closeButton, TweenInfo.new(0.15), {
             BackgroundTransparency = 0,
             BackgroundColor3 = CONFIG.ERROR_COLOR
         }):Play()
-        CreateTween(closeButton, TweenInfo.new(0.12), {
+        CreateTween(closeButton, TweenInfo.new(0.15), {
             TextColor3 = Color3.new(1, 1, 1)
         }):Play()
     end)
     
     closeButton.MouseLeave:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(0.12), {
+        CreateTween(closeButton, TweenInfo.new(0.15), {
             BackgroundTransparency = 1
         }):Play()
-        CreateTween(closeButton, TweenInfo.new(0.12), {
-            TextColor3 = CONFIG.MUTED_COLOR
+        CreateTween(closeButton, TweenInfo.new(0.15), {
+            TextColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -2266,18 +2461,19 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
             statusLabel.Text = "Please enter a key"
             statusLabel.TextColor3 = CONFIG.ERROR_COLOR
             
+            -- Shake animation
             local originalPos = keyInputFrame.Position
             for i = 1, 3 do
-                CreateTween(keyInputFrame, TweenInfo.new(0.04), {
-                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + 4, originalPos.Y.Scale, originalPos.Y.Offset)
+                CreateTween(keyInputFrame, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + 5, originalPos.Y.Scale, originalPos.Y.Offset)
                 }):Play()
-                task.wait(0.04)
-                CreateTween(keyInputFrame, TweenInfo.new(0.04), {
-                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset - 4, originalPos.Y.Scale, originalPos.Y.Offset)
+                task.wait(0.05)
+                CreateTween(keyInputFrame, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset - 5, originalPos.Y.Scale, originalPos.Y.Offset)
                 }):Play()
-                task.wait(0.04)
+                task.wait(0.05)
             end
-            CreateTween(keyInputFrame, TweenInfo.new(0.04), {
+            CreateTween(keyInputFrame, TweenInfo.new(0.05), {
                 Position = originalPos
             }):Play()
             return
@@ -2294,48 +2490,49 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         end
         
         if isValidKey then
-            statusLabel.Text = "✓ Success!"
+            statusLabel.Text = "✓ Authentication successful!"
             statusLabel.TextColor3 = CONFIG.SUCCESS_COLOR
             
             CreateTween(submitButton, TweenInfo.new(0.2), {
                 BackgroundColor3 = CONFIG.SUCCESS_COLOR
             }):Play()
-            submitButton.Text = "Authenticated"
+            submitButton.Text = "Success!"
             
             KeySystem.LastValidKey = enteredKey
             saveKey(enteredKey)
             
-            task.wait(0.8)
+            task.wait(1)
             
-            CreateTween(keyWindow, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
                 Size = UDim2.new(0, 0, 0, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 BackgroundTransparency = 1
             }):Play()
             
-            CreateTween(overlay, TweenInfo.new(0.25), {
+            CreateTween(overlay, TweenInfo.new(0.3), {
                 BackgroundTransparency = 1
             }):Play()
             
-            task.wait(0.25)
+            task.wait(0.3)
             screenGui:Destroy()
             callback(true)
         else
-            statusLabel.Text = "Invalid key"
+            statusLabel.Text = "Invalid key. Please try again."
             statusLabel.TextColor3 = CONFIG.ERROR_COLOR
             
+            -- Shake animation
             local originalPos = keyWindow.Position
             for i = 1, 2 do
-                CreateTween(keyWindow, TweenInfo.new(0.04), {
-                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + 6, originalPos.Y.Scale, originalPos.Y.Offset)
+                CreateTween(keyWindow, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + 8, originalPos.Y.Scale, originalPos.Y.Offset)
                 }):Play()
-                task.wait(0.04)
-                CreateTween(keyWindow, TweenInfo.new(0.04), {
-                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset - 6, originalPos.Y.Scale, originalPos.Y.Offset)
+                task.wait(0.05)
+                CreateTween(keyWindow, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset - 8, originalPos.Y.Scale, originalPos.Y.Offset)
                 }):Play()
-                task.wait(0.04)
+                task.wait(0.05)
             end
-            CreateTween(keyWindow, TweenInfo.new(0.04), {
+            CreateTween(keyWindow, TweenInfo.new(0.05), {
                 Position = originalPos
             }):Play()
             
@@ -2347,17 +2544,17 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     end)
     
     closeButton.MouseButton1Click:Connect(function()
-        CreateTween(keyWindow, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1
         }):Play()
         
-        CreateTween(overlay, TweenInfo.new(0.25), {
+        CreateTween(overlay, TweenInfo.new(0.3), {
             BackgroundTransparency = 1
         }):Play()
         
-        task.wait(0.25)
+        task.wait(0.3)
         screenGui:Destroy()
         callback(false)
     end)
