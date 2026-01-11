@@ -592,6 +592,13 @@ function VortexUI:CreateWindow(options)
             })
             currentTween:Play()
             
+            -- Animate background frame for minimized state
+            local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
+                Size = UDim2.new(0, 230, 0, 66),
+                Position = UDim2.new(minimizedPos.X.Scale, minimizedPos.X.Offset - 5, minimizedPos.Y.Scale, minimizedPos.Y.Offset - 5)
+            })
+            backgroundTween:Play()
+            
             for _, child in ipairs(mainFrame:GetChildren()) do
                 if child ~= headerBar and child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     child.Visible = false
@@ -625,6 +632,13 @@ function VortexUI:CreateWindow(options)
             })
             currentTween:Play()
             
+            -- Animate background frame for restored state
+            local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
+                Size = UDim2.new(0, 830, 0, 530),
+                Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - 5, restoredPos.Y.Scale, restoredPos.Y.Offset - 5)
+            })
+            backgroundTween:Play()
+            
             for child, wasVisible in pairs(originalVisibilities) do
                 if child.Parent then
                     child.Visible = wasVisible
@@ -657,6 +671,15 @@ function VortexUI:CreateWindow(options)
         local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         local boundedPosition = keepInBounds(newPosition, isMinimized and minimizedSize or mainFrame.Size)
         mainFrame.Position = boundedPosition
+        
+        -- Move background frame along with main frame
+        local backgroundOffset = 5 -- 10px larger frame, so 5px offset on each side
+        backgroundFrame.Position = UDim2.new(
+            boundedPosition.X.Scale, 
+            boundedPosition.X.Offset - backgroundOffset, 
+            boundedPosition.Y.Scale, 
+            boundedPosition.Y.Offset - backgroundOffset
+        )
     end
     
     local function handleDragStart(input)
