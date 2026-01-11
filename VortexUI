@@ -16,18 +16,18 @@ local CONFIG = {
     INPUT_COLOR = Color3.fromRGB(40, 40, 48),
     
     -- Text colors with better hierarchy
-    TEXT_COLOR = Color3.fromRGB(230, 230, 230),
-    SUB_TEXT_COLOR = Color3.fromRGB(150, 150, 150),
-    MUTED_COLOR = Color3.fromRGB(100, 116, 139),
+    TEXT_COLOR = Color3.fromRGB(255, 255, 255),
+    SUB_TEXT_COLOR = Color3.fromRGB(180, 180, 180),
+    MUTED_COLOR = Color3.fromRGB(120, 120, 120),
     
     -- Border and divider colors
     BORDER_COLOR = Color3.fromRGB(55, 55, 65),
     DIVIDER_COLOR = Color3.fromRGB(45, 45, 55),
     
     -- Accent colors - neutral blended theme
-    ACCENT_COLOR = Color3.fromRGB(230, 230, 230),
-    ACCENT_HOVER = Color3.fromRGB(120, 120, 130),
-    ACCENT_GLOW = Color3.fromRGB(140, 140, 150),
+    ACCENT_COLOR = Color3.fromRGB(59, 130, 246),
+    ACCENT_HOVER = Color3.fromRGB(37, 99, 235),
+    ACCENT_GLOW = Color3.fromRGB(96, 165, 250),
     
     -- Status colors
     SUCCESS_COLOR = Color3.fromRGB(34, 197, 94),
@@ -1287,7 +1287,7 @@ function VortexUI:CreateWindow(options)
                 Name = "Indicator",
                 Size = UDim2.new(0, 20, 0, 20),
                 Position = UDim2.new(0, 3, 0.5, -10),
-                BackgroundColor3 = CONFIG.TEXT_COLOR,
+                BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0
             })
             toggleIndicator.Parent = toggleButton
@@ -1412,7 +1412,7 @@ function VortexUI:CreateWindow(options)
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Text = currentValue .. suffix,
-                TextColor3 = CONFIG.ACCENT_COLOR,
+                TextColor3 = Color3.new(1, 1, 1),
                 TextSize = 12,
                 Font = Enum.Font.Montserrat
             })
@@ -1810,7 +1810,7 @@ function VortexUI:CreateWindow(options)
                     Position = UDim2.new(0, 12, 0, 0),
                     BackgroundTransparency = 1,
                     Text = option,
-                    TextColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR,
+                    TextColor3 = isSelected and Color3.new(1, 1, 1) or CONFIG.TEXT_COLOR,
                     TextSize = 13,
                     Font = isSelected and Enum.Font.Montserrat or Enum.Font.Montserrat,
                     TextXAlignment = Enum.TextXAlignment.Left,
@@ -2567,3 +2567,4 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
 end
 
 return VortexUI
+
