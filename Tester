@@ -25,6 +25,11 @@ VortexUI:CreateWindow({
                 Name = "Farm",
                 Icon = "shovel"
             })
+
+            local TeleportTab = Window:CreateTab({
+                Name = "Teleport",
+                Icon = "map"
+            })
             
             -- Player tab variables
             local walkSpeedEnabled = false
@@ -281,6 +286,96 @@ VortexUI:CreateWindow({
                     end
                 end
             })
+
+            local collectables = workspace.Collectibles
+            local royalJellyList = {}
+            
+            local function updateRoyalJellyList()
+                royalJellyList = {}
+                for _, collectible in ipairs(collectables:GetChildren()) do
+                    if collectible:FindFirstChild("FrontDecal") and 
+                       collectible.FrontDecal.Texture == "rbxassetid://1471882621" and
+                       collectible.Transparency <= 0 then
+                        table.insert(royalJellyList, collectible)
+                    end
+                end
+            end
+            
+            -- Initial scan
+            updateRoyalJellyList()
+            
+            -- Update list periodically
+            task.spawn(function()
+                while true do
+                    updateRoyalJellyList()
+                    task.wait(2)
+                end
+            end)
+
+            TeleportTab:CreateToggle({
+                Name = "Collect Royal Jelly",
+                CurrentValue = false,
+                Callback = function(value)
+                    if value then
+                        local collectLoop
+                        collectLoop = task.spawn(function()
+                            while value do
+                                if #royalJellyList > 0 then
+                                    -- Find nearest royal jelly
+                                    local nearestJelly = nil
+                                    local nearestDistance = math.huge
+                                    local currentChar = player.Character or player:WaitForChild("Character")
+                                    local hrp = currentChar:WaitForChild("HumanoidRootPart")
+                                    local playerPos = hrp.Position
+                                    
+                                    for _, jelly in ipairs(royalJellyList) do
+                                        if jelly and jelly.Parent then
+                                            local distance = (jelly.Position - playerPos).Magnitude
+                                            if distance < nearestDistance then
+                                                nearestDistance = distance
+                                                nearestJelly = jelly
+                                            end
+                                        end
+                                    end
+                                    
+                                    if nearestJelly then
+                                        hrp.CFrame = CFrame.new(nearestJelly.Position + Vector3.new(0, 3, 0))
+                                        task.wait(0.5)
+                                    else
+                                        -- No royal jelly found, wait and refresh list
+                                        updateRoyalJellyList()
+                                        task.wait(2)
+                                    end
+                                else
+                                    -- No royal jelly in list, wait and refresh
+                                    updateRoyalJellyList()
+                                    task.wait(2)
+                                end
+                                task.wait(0.1)
+                            end
+                        end)
+                        
+                        -- Store the loop so we can stop it later
+                        TeleportTab.royalJellyLoop = collectLoop
+                    else
+                        -- Stop the collection loop
+                        if TeleportTab.royalJellyLoop then
+                            task.cancel(TeleportTab.royalJellyLoop)
+                            TeleportTab.royalJellyLoop = nil
+                        end
+                    end
+                end
+            })
+
+
+            TeleportTab:CreateButton({
+                Name = "Teleport to hive",
+                Callback = function()
+                    local hiveCFrame = GetHiveCFrame()
+                    player.Character.HumanoidRootPart.CFrame = hiveCFrame
+                end
+            })
+            
         end
     end
 })
