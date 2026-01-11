@@ -10,7 +10,7 @@ local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footage
 -- Modernized color palette with better contrast and depth
 local CONFIG = {
     -- Base colors - deeper, richer tones
-    PRIMARY_COLOR = Color3.fromRGB(13, 13, 15),
+    PRIMARY_COLOR = Color3.fromRGB(16, 16, 16),
     SECONDARY_COLOR = Color3.fromRGB(22, 22, 26),
     PANEL_COLOR = Color3.fromRGB(32, 32, 38),
     INPUT_COLOR = Color3.fromRGB(40, 40, 48),
@@ -84,7 +84,7 @@ local function CreateElement(elementType, properties)
         element.AutoButtonColor = properties.AutoButtonColor ~= false
         element.TextColor3 = properties.TextColor3 or Color3.new(1, 1, 1)
         element.TextSize = properties.TextSize or 14
-        element.Font = properties.Font or Enum.Font.GothamMedium
+        element.Font = properties.Font or Enum.Font.Montserrat
     end
     
     return element
@@ -270,8 +270,8 @@ function VortexUI:CreateWindow(options)
     -- Main Frame with enhanced styling and shadow
     local mainFrame = CreateElement("Frame", {
         Name = "MainFrame",
-        Size = UDim2.new(0, 820, 0, 520),
-        Position = UDim2.new(0.5, -410, 0.5, -260),
+        Size = UDim2.new(0, 600, 0, 400),
+        Position = UDim2.new(0.5, -300, 0.5, -200),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
@@ -280,8 +280,8 @@ function VortexUI:CreateWindow(options)
     -- Background frame with rounded corners for visual effect
     local backgroundFrame = CreateElement("Frame", {
         Name = "BackgroundFrame",
-        Size = UDim2.new(0, 830, 0, 530),
-        Position = UDim2.new(0.5, -415, 0.5, -265),
+        Size = UDim2.new(0, 610, 0, 410),
+        Position = UDim2.new(0.5, -305, 0.5, -205),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0,
         ZIndex = mainFrame.ZIndex - 1
@@ -389,7 +389,7 @@ function VortexUI:CreateWindow(options)
         Text = windowName,
         TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 17,
-        Font = Enum.Font.GothamBold,
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     titleLabel.Parent = headerBar
@@ -426,7 +426,7 @@ function VortexUI:CreateWindow(options)
         Text = "−",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
         TextSize = 20,
-        Font = Enum.Font.GothamBold
+        Font = Enum.Font.Montserrat
     })
     minimizeIcon.Parent = minimizeButton
     
@@ -450,7 +450,7 @@ function VortexUI:CreateWindow(options)
         Text = "×",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
         TextSize = 22,
-        Font = Enum.Font.GothamBold
+        Font = Enum.Font.Montserrat
     })
     closeIcon.Parent = closeButton
     
@@ -594,7 +594,7 @@ function VortexUI:CreateWindow(options)
             
             -- Animate background frame for minimized state
             local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
-                Size = UDim2.new(0, 230, 0, 66),
+                Size = UDim2.new(0, 210, 0, 46),
                 Position = UDim2.new(minimizedPos.X.Scale, minimizedPos.X.Offset - 5, minimizedPos.Y.Scale, minimizedPos.Y.Offset - 5)
             })
             backgroundTween:Play()
@@ -634,7 +634,7 @@ function VortexUI:CreateWindow(options)
             
             -- Animate background frame for restored state
             local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
-                Size = UDim2.new(0, 830, 0, 530),
+                Size = UDim2.new(0, 610, 0, 410),
                 Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - 5, restoredPos.Y.Scale, restoredPos.Y.Offset - 5)
             })
             backgroundTween:Play()
@@ -817,7 +817,7 @@ function VortexUI:CreateWindow(options)
             Text = tabName,
             TextColor3 = CONFIG.SUB_TEXT_COLOR,
             TextSize = 14,
-            Font = Enum.Font.GothamMedium,
+            Font = Enum.Font.Montserrat,
             TextXAlignment = Enum.TextXAlignment.Left
         })
         tabLabel.Parent = tabButton
@@ -839,8 +839,8 @@ function VortexUI:CreateWindow(options)
         -- Modern accent indicator (left bar)
         local accentIndicator = CreateElement("Frame", {
             Name = "AccentIndicator",
-            Size = UDim2.new(0, 3, 0, 20),
-            Position = UDim2.new(0, 0, 0.5, -10),
+            Size = UDim2.new(0, 3, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
             BackgroundColor3 = CONFIG.ACCENT_COLOR,
             BorderSizePixel = 0,
             Visible = false
@@ -936,13 +936,13 @@ function VortexUI:CreateWindow(options)
                     end
                     
                     CreateTween(otherTab.AccentIndicator, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-                        Size = UDim2.new(0, 3, 0, 0),
+                        Size = UDim2.new(0, 3, 1, 0),
                         BackgroundTransparency = 1
                     }):Play()
                     
                     otherTab.Content.Visible = false
                     otherTab.AccentIndicator.Visible = false
-                    otherTab.AccentIndicator.Size = UDim2.new(0, 3, 0, 20)
+                    otherTab.AccentIndicator.Size = UDim2.new(0, 3, 1, 0)
                     otherTab.AccentIndicator.BackgroundTransparency = 0
                 end
             end
@@ -970,10 +970,10 @@ function VortexUI:CreateWindow(options)
             end
             
             accentIndicator.Visible = true
-            accentIndicator.Size = UDim2.new(0, 3, 0, 0)
+            accentIndicator.Size = UDim2.new(0, 3, 1, 0)
             accentIndicator.BackgroundTransparency = 1
             CreateTween(accentIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 3, 0, 20),
+                Size = UDim2.new(0, 3, 1, 0),
                 BackgroundTransparency = 0
             }):Play()
             
@@ -1009,7 +1009,7 @@ function VortexUI:CreateWindow(options)
                 Text = buttonName,
                 TextColor3 = Color3.new(1, 1, 1),
                 TextSize = 14,
-                Font = Enum.Font.GothamSemibold,
+                Font = Enum.Font.Montserrat,
                 AutoButtonColor = false
             })
             button.Parent = tabContent
@@ -1096,7 +1096,7 @@ function VortexUI:CreateWindow(options)
                 Text = title or "",
                 TextColor3 = CONFIG.MUTED_COLOR,
                 TextSize = 12,
-                Font = Enum.Font.GothamMedium,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Center,
                 TextYAlignment = Enum.TextYAlignment.Center
             })
@@ -1135,7 +1135,7 @@ function VortexUI:CreateWindow(options)
                 Text = labelText,
                 TextColor3 = textColor,
                 TextSize = 14,
-                Font = Enum.Font.GothamMedium,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Center
             })
@@ -1187,7 +1187,7 @@ function VortexUI:CreateWindow(options)
                 Text = title,
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 15,
-                Font = Enum.Font.GothamBold,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             titleLabel.Parent = paragraphFrame
@@ -1200,7 +1200,7 @@ function VortexUI:CreateWindow(options)
                 Text = content,
                 TextColor3 = CONFIG.SUB_TEXT_COLOR,
                 TextSize = 13,
-                Font = Enum.Font.Gotham,
+                Font = Enum.Font.Montserrat,
                 TextWrapped = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Top
@@ -1263,7 +1263,7 @@ function VortexUI:CreateWindow(options)
                 Text = toggleName,
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 14,
-                Font = Enum.Font.GothamMedium,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = toggleFrame
@@ -1390,7 +1390,7 @@ function VortexUI:CreateWindow(options)
                 Text = sliderName,
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 14,
-                Font = Enum.Font.GothamMedium,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = sliderFrame
@@ -1414,7 +1414,7 @@ function VortexUI:CreateWindow(options)
                 Text = currentValue .. suffix,
                 TextColor3 = CONFIG.ACCENT_COLOR,
                 TextSize = 12,
-                Font = Enum.Font.GothamBold
+                Font = Enum.Font.Montserrat
             })
             valueLabel.Parent = valueDisplay
             
@@ -1569,7 +1569,7 @@ function VortexUI:CreateWindow(options)
                 Text = dropdownName,
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 14,
-                Font = Enum.Font.GothamMedium,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ZIndex = 31
             })
@@ -1600,7 +1600,7 @@ function VortexUI:CreateWindow(options)
                 Text = currentOption or "Select option...",
                 TextColor3 = currentOption and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR,
                 TextSize = 13,
-                Font = Enum.Font.Gotham,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextTruncate = Enum.TextTruncate.AtEnd,
                 ZIndex = 32
@@ -1624,7 +1624,7 @@ function VortexUI:CreateWindow(options)
                 Text = "▾",
                 TextColor3 = CONFIG.SUB_TEXT_COLOR,
                 TextSize = 14,
-                Font = Enum.Font.GothamBold,
+                Font = Enum.Font.Montserrat,
                 ZIndex = 33
             })
             chevron.Parent = chevronContainer
@@ -1812,7 +1812,7 @@ function VortexUI:CreateWindow(options)
                     Text = option,
                     TextColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR,
                     TextSize = 13,
-                    Font = isSelected and Enum.Font.GothamMedium or Enum.Font.Gotham,
+                    Font = isSelected and Enum.Font.Montserrat or Enum.Font.Montserrat,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     ZIndex = 103
                 })
@@ -1826,7 +1826,7 @@ function VortexUI:CreateWindow(options)
                     Text = "✓",
                     TextColor3 = CONFIG.ACCENT_COLOR,
                     TextSize = 12,
-                    Font = Enum.Font.GothamBold,
+                    Font = Enum.Font.Montserrat,
                     Visible = isSelected,
                     ZIndex = 103
                 })
@@ -1840,7 +1840,7 @@ function VortexUI:CreateWindow(options)
                     CreateTween(optionLabel, TweenInfo.new(0.15), {
                         TextColor3 = selected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
-                    optionLabel.Font = selected and Enum.Font.GothamMedium or Enum.Font.Gotham
+                    optionLabel.Font = selected and Enum.Font.Montserrat or Enum.Font.Montserrat
                     checkmark.Visible = selected
                 end
                 
@@ -1872,7 +1872,7 @@ function VortexUI:CreateWindow(options)
                                     CreateTween(childLabel, TweenInfo.new(0.15), {
                                         TextColor3 = CONFIG.TEXT_COLOR
                                     }):Play()
-                                    childLabel.Font = Enum.Font.Gotham
+                                    childLabel.Font = Enum.Font.Montserrat
                                 end
                             end
                         end
@@ -1993,7 +1993,7 @@ function VortexUI:CreateWindow(options)
                 Text = inputName,
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 14,
-                Font = Enum.Font.GothamMedium,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = inputFrame
@@ -2019,7 +2019,7 @@ function VortexUI:CreateWindow(options)
                 PlaceholderColor3 = CONFIG.MUTED_COLOR,
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 13,
-                Font = Enum.Font.Gotham,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false
             })
@@ -2085,7 +2085,7 @@ function VortexUI:CreateWindow(options)
                 tabIcon.ImageColor3 = CONFIG.ACCENT_COLOR
             end
             accentIndicator.Visible = true
-            accentIndicator.Position = UDim2.new(0, 0, 0.5, -10)
+            accentIndicator.Position = UDim2.new(0, 0, 0, 0)
             accentIndicator.BackgroundColor3 = CONFIG.ACCENT_COLOR
             
             CreateTween(tabContent, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {
@@ -2311,7 +2311,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Text = "Authentication Required",
         TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 18,
-        Font = Enum.Font.GothamBold,
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Center
     })
     titleLabel.Parent = keyWindow
@@ -2324,7 +2324,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Text = "Enter your license key to continue",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
         TextSize = 13,
-        Font = Enum.Font.Gotham,
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Center
     })
     descLabel.Parent = keyWindow
@@ -2352,7 +2352,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         PlaceholderColor3 = CONFIG.MUTED_COLOR,
         TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 14,
-        Font = Enum.Font.Gotham,
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false
     })
@@ -2382,7 +2382,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Text = "",
         TextColor3 = CONFIG.ERROR_COLOR,
         TextSize = 12,
-        Font = Enum.Font.GothamMedium,
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Center
     })
     statusLabel.Parent = keyWindow
@@ -2397,7 +2397,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Text = "Authenticate",
         TextColor3 = Color3.new(1, 1, 1),
         TextSize = 14,
-        Font = Enum.Font.GothamBold,
+        Font = Enum.Font.Montserrat,
         AutoButtonColor = false
     })
     submitButton.Parent = keyWindow
@@ -2428,7 +2428,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         Text = "×",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
         TextSize = 20,
-        Font = Enum.Font.GothamBold,
+        Font = Enum.Font.Montserrat,
         AutoButtonColor = false
     })
     closeButton.Parent = keyWindow
