@@ -273,8 +273,7 @@ function VortexUI:CreateWindow(options)
         Size = UDim2.new(0, 820, 0, 520),
         Position = UDim2.new(0.5, -410, 0.5, -260),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
-        BorderSizePixel = 0,
-        ClipsDescendants = true
+        BorderSizePixel = 0
     })
     mainFrame.Parent = screenGui
     
@@ -796,7 +795,7 @@ function VortexUI:CreateWindow(options)
         })
         tabButton.Parent = sidebarFrame
         
-        AddCorner(tabButton, UDim.new(0, 0))
+        AddCorner(tabButton, CONFIG.CORNER_RADIUS)
         
         -- Tab Icon container
         local tabIconContainer = CreateElement("Frame", {
@@ -1015,7 +1014,7 @@ function VortexUI:CreateWindow(options)
             })
             button.Parent = tabContent
             
-            AddCorner(button, UDim.new(0, 0))
+            AddCorner(button, CONFIG.CORNER_RADIUS)
             
             -- Subtle inner shadow/depth
             local buttonGradient = AddGradient(button, 
@@ -1170,7 +1169,7 @@ function VortexUI:CreateWindow(options)
                 BorderSizePixel = 0
             })
             paragraphFrame.Parent = tabContent
-            AddCorner(paragraphFrame, UDim.new(0, 0))
+            AddCorner(paragraphFrame, CONFIG.CORNER_RADIUS)
             
             local paragraphPadding = CreateElement("UIPadding", {
                 PaddingTop = UDim.new(0, 14),
@@ -1249,7 +1248,7 @@ function VortexUI:CreateWindow(options)
             })
             toggleFrame.Parent = tabContent
             
-            AddCorner(toggleFrame, UDim.new(0, 0))
+            AddCorner(toggleFrame, CONFIG.CORNER_RADIUS)
             
             toggleFrame.BackgroundTransparency = 1
             CreateTween(toggleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
@@ -1381,7 +1380,7 @@ function VortexUI:CreateWindow(options)
             })
             sliderFrame.Parent = tabContent
             
-            AddCorner(sliderFrame, UDim.new(0, 0))
+            AddCorner(sliderFrame, CONFIG.CORNER_RADIUS)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label",
@@ -1559,7 +1558,7 @@ function VortexUI:CreateWindow(options)
             dropdownFrame.ClipsDescendants = false
             dropdownFrame.ZIndex = 30
             
-            AddCorner(dropdownFrame, UDim.new(0, 0))
+            AddCorner(dropdownFrame, CONFIG.CORNER_RADIUS)
             
             -- Dropdown label above
             local label = CreateElement("TextLabel", {
@@ -1984,7 +1983,7 @@ function VortexUI:CreateWindow(options)
             })
             inputFrame.Parent = tabContent
             
-            AddCorner(inputFrame, UDim.new(0, 0))
+            AddCorner(inputFrame, CONFIG.CORNER_RADIUS)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label",
@@ -2340,7 +2339,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     keyInputFrame.Parent = keyWindow
     
-    AddCorner(keyInputFrame, UDim.new(0, 0))
+    AddCorner(keyInputFrame, CONFIG.CORNER_RADIUS)
     local keyInputStroke = AddStroke(keyInputFrame, 1, CONFIG.BORDER_COLOR, 0.4)
     
     local keyInput = CreateElement("TextBox", {
@@ -2403,7 +2402,7 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     submitButton.Parent = keyWindow
     
-    AddCorner(submitButton, UDim.new(0, 0))
+    AddCorner(submitButton, CONFIG.CORNER_RADIUS)
     
     -- Button hover effects
     submitButton.MouseEnter:Connect(function()
