@@ -292,8 +292,8 @@ function VortexUI:CreateWindow(options)
     backgroundCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
     backgroundCorner.Parent = backgroundFrame
     
-    -- Add subtle border to background frame
-    local backgroundStroke = AddStroke(backgroundFrame, 1, CONFIG.BORDER_COLOR, 0.3)
+    -- Remove border from background frame
+    -- local backgroundStroke = AddStroke(backgroundFrame, 1, CONFIG.BORDER_COLOR, 0.3)
     
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 0)
@@ -304,8 +304,8 @@ function VortexUI:CreateWindow(options)
     bottomCorner.CornerRadius = UDim.new(0, 0)
     bottomCorner.Parent = mainFrame
     
-    -- Add subtle border with transparency
-    local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
+    -- Remove border from main frame
+    -- local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
     
     -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
