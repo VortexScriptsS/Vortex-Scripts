@@ -277,6 +277,24 @@ function VortexUI:CreateWindow(options)
     })
     mainFrame.Parent = screenGui
     
+    -- Background frame with rounded corners for visual effect
+    local backgroundFrame = CreateElement("Frame", {
+        Name = "BackgroundFrame",
+        Size = UDim2.new(0, 830, 0, 530),
+        Position = UDim2.new(0.5, -415, 0.5, -265),
+        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+        BorderSizePixel = 0,
+        ZIndex = mainFrame.ZIndex - 1
+    })
+    backgroundFrame.Parent = screenGui
+    
+    local backgroundCorner = Instance.new("UICorner")
+    backgroundCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    backgroundCorner.Parent = backgroundFrame
+    
+    -- Add subtle border to background frame
+    local backgroundStroke = AddStroke(backgroundFrame, 1, CONFIG.BORDER_COLOR, 0.3)
+    
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 0)
     mainCorner.Parent = mainFrame
