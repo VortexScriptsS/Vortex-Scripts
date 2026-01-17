@@ -50,6 +50,67 @@ local CONFIG = {
     SHADOW_TRANSPARENCY = 0.6
 }
 
+-- Responsive Design System
+local Responsive = {
+    Breakpoints = {
+        Mobile = { Width = 768, Height = 1024 },
+        Tablet = { Width = 1024, Height = 768 },
+        Desktop = { Width = 1920, Height = 1080 }
+    },
+    
+    ScaleFactors = {
+        Mobile = { UI = 0.7, Font = 0.85, Spacing = 0.8 },
+        Tablet = { UI = 0.85, Font = 0.9, Spacing = 0.9 },
+        Desktop = { UI = 1.0, Font = 1.0, Spacing = 1.0 }
+    },
+    
+    CurrentCategory = "Desktop",
+    CurrentScale = { UI = 1.0, Font = 1.0, Spacing = 1.0 }
+}
+
+local function GetScreenCategory()
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    local width, height = viewportSize.X, viewportSize.Y
+    
+    if width <= Responsive.Breakpoints.Mobile.Width or height <= Responsive.Breakpoints.Mobile.Height then
+        return "Mobile"
+    elseif width <= Responsive.Breakpoints.Tablet.Width or height <= Responsive.Breakpoints.Tablet.Height then
+        return "Tablet"
+    else
+        return "Desktop"
+    end
+end
+
+local function UpdateResponsiveScale()
+    local category = GetScreenCategory()
+    Responsive.CurrentCategory = category
+    Responsive.CurrentScale = Responsive.ScaleFactors[category]
+end
+
+local function GetResponsiveSize(baseSize, scaleType)
+    scaleType = scaleType or "UI"
+    local scale = Responsive.CurrentScale[scaleType] or 1.0
+    return baseSize * scale
+end
+
+local function GetResponsiveUDim2(baseUDim2, scaleX, scaleY)
+    scaleX = scaleX or "UI"
+    scaleY = scaleY or "UI"
+    local scaleXValue = Responsive.CurrentScale[scaleX] or 1.0
+    local scaleYValue = Responsive.CurrentScale[scaleY] or 1.0
+    
+    return UDim2.new(
+        baseUDim2.X.Scale,
+        baseUDim2.X.Offset * scaleXValue,
+        baseUDim2.Y.Scale,
+        baseUDim2.Y.Offset * scaleYValue
+    )
+end
+
+local function GetResponsiveFontSize(baseSize)
+    return math.max(10, GetResponsiveSize(baseSize, "Font"))
+end
+
 -- Storage for elements and their states
 local Elements = {}
 local ToggleStates = {}
@@ -231,6 +292,9 @@ function VortexUI:CreateWindow(options)
     local keySystem = options.KeySystem or nil
     local onWindowCreated = options.OnWindowCreated or nil
     
+    -- Initialize responsive scale
+    UpdateResponsiveScale()
+    
     if keySystem then
         KeySystem.Enabled = true
         KeySystem.ValidKeys = keySystem.ValidKeys or {}
@@ -268,20 +332,25 @@ function VortexUI:CreateWindow(options)
     screenGui.Parent = CoreGui
     
     -- Main Frame with enhanced styling and shadow
+    local baseWindowSize = UDim2.new(0, 600, 0, 400)
+    local windowSize = GetResponsiveUDim2(baseWindowSize)
+    local windowPos = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2)
+    
     local mainFrame = CreateElement("Frame", {
         Name = "MainFrame",
-        Size = UDim2.new(0, 600, 0, 400),
-        Position = UDim2.new(0.5, -300, 0.5, -200),
+        Size = windowSize,
+        Position = windowPos,
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     mainFrame.Parent = screenGui
     
     -- Background frame with rounded corners for visual effect
+    local backgroundOffset = GetResponsiveSize(10)
     local backgroundFrame = CreateElement("Frame", {
         Name = "BackgroundFrame",
-        Size = UDim2.new(0, 610, 0, 410),
-        Position = UDim2.new(0.5, -305, 0.5, -205),
+        Size = UDim2.new(0, windowSize.X.Offset + backgroundOffset, 0, windowSize.Y.Offset + backgroundOffset),
+        Position = UDim2.new(0.5, -(windowSize.X.Offset + backgroundOffset)/2, 0.5, -(windowSize.Y.Offset + backgroundOffset)/2),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0,
         ZIndex = mainFrame.ZIndex - 1
@@ -310,7 +379,7 @@ function VortexUI:CreateWindow(options)
     -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
         Name = "HeaderBar",
-        Size = UDim2.new(1, 0, 0, 56),
+        Size = UDim2.new(1, 0, 0, GetResponsiveSize(56)),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.SECONDARY_COLOR,
         BorderSizePixel = 0
@@ -343,10 +412,11 @@ function VortexUI:CreateWindow(options)
     headerDivider.Parent = headerBar
     
     -- Enhanced Logo Frame with glow effect
+    local logoSize = GetResponsiveSize(38)
     local logoFrame = CreateElement("Frame", {
         Name = "LogoFrame",
-        Size = UDim2.new(0, 38, 0, 38),
-        Position = UDim2.new(0, 16, 0.5, -19),
+        Size = UDim2.new(0, logoSize, 0, logoSize),
+        Position = UDim2.new(0, GetResponsiveSize(16), 0.5, -logoSize/2),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         Active = false
@@ -383,12 +453,12 @@ function VortexUI:CreateWindow(options)
     -- Enhanced Title with better typography
     local titleLabel = CreateElement("TextLabel", {
         Name = "TitleLabel",
-        Size = UDim2.new(1, -160, 0, 20),
-        Position = UDim2.new(0, 66, 0.5, -10),
+        Size = UDim2.new(1, -GetResponsiveSize(160), 0, GetResponsiveSize(20)),
+        Position = UDim2.new(0, GetResponsiveSize(66), 0.5, -GetResponsiveSize(10)),
         BackgroundTransparency = 1,
         Text = windowName,
         TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 17,
+        TextSize = GetResponsiveFontSize(17),
         Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Left
     })
@@ -397,20 +467,20 @@ function VortexUI:CreateWindow(options)
     -- Window control buttons with modern pill design
     local controlsContainer = CreateElement("Frame", {
         Name = "ControlsContainer",
-        Size = UDim2.new(0, 80, 0, 32),
-        Position = UDim2.new(1, -96, 0.5, -16),
+        Size = GetResponsiveUDim2(UDim2.new(0, 80, 0, 32)),
+        Position = UDim2.new(1, -GetResponsiveSize(96), 0.5, -GetResponsiveSize(16)),
         BackgroundColor3 = CONFIG.PANEL_COLOR,
         BorderSizePixel = 0
     })
     controlsContainer.Parent = headerBar
-    AddCorner(controlsContainer, UDim.new(0, 16))
+    AddCorner(controlsContainer, UDim.new(0, GetResponsiveSize(16)))
     AddStroke(controlsContainer, 1, CONFIG.BORDER_COLOR, 0.5)
     
     -- Minimize Button
     local minimizeButton = CreateElement("TextButton", {
         Name = "MinimizeButton",
-        Size = UDim2.new(0, 32, 0, 24),
-        Position = UDim2.new(0, 4, 0.5, -12),
+        Size = GetResponsiveUDim2(UDim2.new(0, 32, 0, 24)),
+        Position = UDim2.new(0, GetResponsiveSize(4), 0.5, -GetResponsiveSize(12)),
         BackgroundColor3 = CONFIG.INPUT_COLOR,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -418,14 +488,14 @@ function VortexUI:CreateWindow(options)
         AutoButtonColor = false
     })
     minimizeButton.Parent = controlsContainer
-    AddCorner(minimizeButton, UDim.new(0, 8))
+    AddCorner(minimizeButton, UDim.new(0, GetResponsiveSize(8)))
     
     local minimizeIcon = CreateElement("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "−",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = 20,
+        TextSize = GetResponsiveFontSize(20),
         Font = Enum.Font.Montserrat
     })
     minimizeIcon.Parent = minimizeButton
@@ -433,8 +503,8 @@ function VortexUI:CreateWindow(options)
     -- Close Button with red accent on hover
     local closeButton = CreateElement("TextButton", {
         Name = "CloseButton",
-        Size = UDim2.new(0, 32, 0, 24),
-        Position = UDim2.new(1, -36, 0.5, -12),
+        Size = GetResponsiveUDim2(UDim2.new(0, 32, 0, 24)),
+        Position = UDim2.new(1, -GetResponsiveSize(36), 0.5, -GetResponsiveSize(12)),
         BackgroundColor3 = CONFIG.INPUT_COLOR,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -442,14 +512,14 @@ function VortexUI:CreateWindow(options)
         AutoButtonColor = false
     })
     closeButton.Parent = controlsContainer
-    AddCorner(closeButton, UDim.new(0, 8))
+    AddCorner(closeButton, UDim.new(0, GetResponsiveSize(8)))
     
     local closeIcon = CreateElement("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "×",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = 22,
+        TextSize = GetResponsiveFontSize(22),
         Font = Enum.Font.Montserrat
     })
     closeIcon.Parent = closeButton
@@ -497,7 +567,7 @@ function VortexUI:CreateWindow(options)
     local isMinimized = false
     local originalSize = mainFrame.Size
     local originalPosition = mainFrame.Position
-    local minimizedSize = UDim2.new(0, 220, 0, 56)
+    local minimizedSize = GetResponsiveUDim2(UDim2.new(0, 220, 0, 56))
     local originalVisibilities = {}
     local currentTween = nil
     
@@ -517,17 +587,18 @@ function VortexUI:CreateWindow(options)
     -- Content Frame
     local contentFrame = CreateElement("Frame", {
         Name = "ContentFrame",
-        Size = UDim2.new(1, 0, 1, -56),
-        Position = UDim2.new(0, 0, 0, 56),
+        Size = UDim2.new(1, 0, 1, -GetResponsiveSize(56)),
+        Position = UDim2.new(0, 0, 0, GetResponsiveSize(56)),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     contentFrame.Parent = mainFrame
     
     -- Enhanced Sidebar with better styling
+    local sidebarWidth = Responsive.CurrentCategory == "Mobile" and GetResponsiveSize(160) or GetResponsiveSize(200)
     local sidebarFrame = CreateElement("Frame", {
         Name = "SidebarFrame",
-        Size = UDim2.new(0, 200, 1, 0),
+        Size = UDim2.new(0, sidebarWidth, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.SECONDARY_COLOR,
         BorderSizePixel = 0
@@ -546,21 +617,21 @@ function VortexUI:CreateWindow(options)
     
     -- Sidebar padding
     local sidebarPadding = CreateElement("UIPadding", {
-        PaddingTop = UDim.new(0, 12),
-        PaddingLeft = UDim.new(0, 12),
-        PaddingRight = UDim.new(0, 12),
-        PaddingBottom = UDim.new(0, 12)
+        PaddingTop = UDim.new(0, GetResponsiveSize(12)),
+        PaddingLeft = UDim.new(0, GetResponsiveSize(12)),
+        PaddingRight = UDim.new(0, GetResponsiveSize(12)),
+        PaddingBottom = UDim.new(0, GetResponsiveSize(12))
     })
     sidebarPadding.Parent = sidebarFrame
     
     -- Enhanced Content Area with better scrollbar
     local contentArea = CreateElement("ScrollingFrame", {
         Name = "ContentArea",
-        Size = UDim2.new(1, -200, 1, 0),
-        Position = UDim2.new(0, 200, 0, 0),
+        Size = UDim2.new(1, -sidebarWidth, 1, 0),
+        Position = UDim2.new(0, sidebarWidth, 0, 0),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0,
-        ScrollBarThickness = 4,
+        ScrollBarThickness = GetResponsiveSize(4),
         ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
         ScrollBarImageTransparency = 0.3,
         TopImage = "rbxassetid://6015897843",
@@ -594,8 +665,8 @@ function VortexUI:CreateWindow(options)
             
             -- Animate background frame for minimized state
             local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
-                Size = UDim2.new(0, 230, 0, 66),
-                Position = UDim2.new(minimizedPos.X.Scale, minimizedPos.X.Offset - 5, minimizedPos.Y.Scale, minimizedPos.Y.Offset - 5)
+                Size = GetResponsiveUDim2(UDim2.new(0, 230, 0, 66)),
+                Position = UDim2.new(minimizedPos.X.Scale, minimizedPos.X.Offset - GetResponsiveSize(5), minimizedPos.Y.Scale, minimizedPos.Y.Offset - GetResponsiveSize(5))
             })
             backgroundTween:Play()
             
@@ -634,8 +705,8 @@ function VortexUI:CreateWindow(options)
             
             -- Animate background frame for restored state
             local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
-                Size = UDim2.new(0, 610, 0, 410),
-                Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - 5, restoredPos.Y.Scale, restoredPos.Y.Offset - 5)
+                Size = UDim2.new(0, windowSize.X.Offset + backgroundOffset, 0, windowSize.Y.Offset + backgroundOffset),
+                Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - GetResponsiveSize(5), restoredPos.Y.Scale, restoredPos.Y.Offset - GetResponsiveSize(5))
             })
             backgroundTween:Play()
             
@@ -650,7 +721,7 @@ function VortexUI:CreateWindow(options)
             if sidebarFrame then sidebarFrame.Visible = true end
             if titleLabel then titleLabel.Visible = true end
             
-            headerBar.Size = UDim2.new(1, 0, 0, 56)
+            headerBar.Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
             originalPosition = restoredPos
         end
     end
@@ -673,7 +744,7 @@ function VortexUI:CreateWindow(options)
         mainFrame.Position = boundedPosition
         
         -- Move background frame along with main frame
-        local backgroundOffset = 5 -- 10px larger frame, so 5px offset on each side
+        local backgroundOffset = GetResponsiveSize(5) -- Responsive offset
         backgroundFrame.Position = UDim2.new(
             boundedPosition.X.Scale, 
             boundedPosition.X.Offset - backgroundOffset, 
@@ -761,6 +832,56 @@ function VortexUI:CreateWindow(options)
     TrackConnection(destructionConnection, window)
     TrackConnection(coreGuiConnection, window)
     
+    -- Screen size change detection for responsive updates
+    local viewportSizeConnection = workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+        local oldCategory = Responsive.CurrentCategory
+        UpdateResponsiveScale()
+        
+        if oldCategory ~= Responsive.CurrentCategory then
+            -- Update window size and position for new screen category
+            local newWindowSize = GetResponsiveUDim2(baseWindowSize)
+            local newWindowPos = UDim2.new(0.5, -newWindowSize.X.Offset/2, 0.5, -newWindowSize.Y.Offset/2)
+            
+            -- Animate window size change
+            CreateTween(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = newWindowSize,
+                Position = newWindowPos
+            }):Play()
+            
+            -- Update background frame
+            local newBackgroundOffset = GetResponsiveSize(10)
+            CreateTween(backgroundFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(0, newWindowSize.X.Offset + newBackgroundOffset, 0, newWindowSize.Y.Offset + newBackgroundOffset),
+                Position = UDim2.new(0.5, -(newWindowSize.X.Offset + newBackgroundOffset)/2, 0.5, -(newWindowSize.Y.Offset + newBackgroundOffset)/2)
+            }):Play()
+            
+            -- Update sidebar width
+            local newSidebarWidth = Responsive.CurrentCategory == "Mobile" and GetResponsiveSize(160) or GetResponsiveSize(200)
+            CreateTween(sidebarFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(0, newSidebarWidth, 1, 0)
+            }):Play()
+            
+            -- Update content area
+            CreateTween(contentArea, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, -newSidebarWidth, 1, 0),
+                Position = UDim2.new(0, newSidebarWidth, 0, 0)
+            }):Play()
+            
+            -- Update header bar height
+            CreateTween(headerBar, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
+            }):Play()
+            
+            -- Update content frame
+            CreateTween(contentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, 0, 1, -GetResponsiveSize(56)),
+                Position = UDim2.new(0, 0, 0, GetResponsiveSize(56))
+            }):Play()
+        end
+    end)
+    
+    TrackConnection(viewportSizeConnection, window)
+    
     WindowInstances[window] = {
         ScreenGui = screenGui,
         MainFrame = mainFrame,
@@ -784,8 +905,8 @@ function VortexUI:CreateWindow(options)
         -- Enhanced Tab Button with modern styling
         local tabButton = CreateElement("TextButton", {
             Name = "TabButton_" .. tabName,
-            Size = UDim2.new(1, 0, 0, 44),
-            Position = UDim2.new(0, 0, 0, tabCount * 52),
+            Size = UDim2.new(1, 0, 0, GetResponsiveSize(44)),
+            Position = UDim2.new(0, 0, 0, tabCount * GetResponsiveSize(52)),
             BackgroundColor3 = CONFIG.SECONDARY_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
@@ -800,8 +921,8 @@ function VortexUI:CreateWindow(options)
         -- Tab Icon container
         local tabIconContainer = CreateElement("Frame", {
             Name = "IconContainer",
-            Size = UDim2.new(0, 32, 0, 32),
-            Position = UDim2.new(0, 8, 0.5, -16),
+            Size = GetResponsiveUDim2(UDim2.new(0, 32, 0, 32)),
+            Position = UDim2.new(0, GetResponsiveSize(8), 0.5, -GetResponsiveSize(16)),
             BackgroundColor3 = CONFIG.PANEL_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
@@ -811,12 +932,12 @@ function VortexUI:CreateWindow(options)
         
         local tabLabel = CreateElement("TextLabel", {
             Name = "TabLabel",
-            Size = UDim2.new(1, -56, 1, 0),
-            Position = UDim2.new(0, 48, 0, 0),
+            Size = UDim2.new(1, -GetResponsiveSize(56), 1, 0),
+            Position = UDim2.new(0, GetResponsiveSize(48), 0, 0),
             BackgroundTransparency = 1,
             Text = tabName,
             TextColor3 = CONFIG.SUB_TEXT_COLOR,
-            TextSize = 14,
+            TextSize = GetResponsiveFontSize(14),
             Font = Enum.Font.Montserrat,
             TextXAlignment = Enum.TextXAlignment.Left
         })
@@ -826,7 +947,7 @@ function VortexUI:CreateWindow(options)
         if iconName and Icons[iconName] then
             tabIcon = CreateElement("ImageLabel", {
                 Name = "TabIcon",
-                Size = UDim2.new(0, 18, 0, 18),
+                Size = GetResponsiveUDim2(UDim2.new(0, 18, 0, 18)),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundTransparency = 1,
@@ -883,8 +1004,8 @@ function VortexUI:CreateWindow(options)
         
         local tabContent = CreateElement("Frame", {
             Name = "TabContent_" .. tabName,
-            Size = UDim2.new(1, -48, 1, -48),
-            Position = UDim2.new(0, 24, 0, 24),
+            Size = UDim2.new(1, -GetResponsiveSize(48), 1, -GetResponsiveSize(48)),
+            Position = UDim2.new(0, GetResponsiveSize(24), 0, GetResponsiveSize(24)),
             BackgroundColor3 = CONFIG.PRIMARY_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
@@ -896,7 +1017,7 @@ function VortexUI:CreateWindow(options)
             local layout = tabContent:FindFirstChildOfClass("UIListLayout")
             if layout then
                 local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 48)
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + GetResponsiveSize(48))
             end
         end
         
@@ -982,7 +1103,7 @@ function VortexUI:CreateWindow(options)
         
         local tabLayout = CreateElement("UIListLayout", {
             SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 12)
+            Padding = UDim.new(0, GetResponsiveSize(12))
         })
         tabLayout.Parent = tabContent
         
@@ -1003,12 +1124,12 @@ function VortexUI:CreateWindow(options)
             
             local button = CreateElement("TextButton", {
                 Name = buttonName,
-                Size = UDim2.new(0, 180, 0, 42),
+                Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42)),
                 BackgroundColor3 = CONFIG.ACCENT_COLOR,
                 BorderSizePixel = 0,
                 Text = buttonName,
                 TextColor3 = Color3.new(1, 1, 1),
-                TextSize = 14,
+                TextSize = GetResponsiveFontSize(14),
                 Font = Enum.Font.Montserrat,
                 AutoButtonColor = false
             })
@@ -1035,25 +1156,25 @@ function VortexUI:CreateWindow(options)
             button.MouseEnter:Connect(function()
                 CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
                     BackgroundColor3 = CONFIG.ACCENT_HOVER,
-                    Size = UDim2.new(0, 184, 0, 42)
+                    Size = GetResponsiveUDim2(UDim2.new(0, 184, 0, 42))
                 }):Play()
             end)
             
             button.MouseLeave:Connect(function()
                 CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
                     BackgroundColor3 = CONFIG.ACCENT_COLOR,
-                    Size = UDim2.new(0, 180, 0, 42)
+                    Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42))
                 }):Play()
             end)
             
             -- Click ripple effect
             button.MouseButton1Click:Connect(function()
                 CreateTween(button, TweenInfo.new(0.1), {
-                    Size = UDim2.new(0, 176, 0, 40)
+                    Size = GetResponsiveUDim2(UDim2.new(0, 176, 0, 40))
                 }):Play()
                 task.wait(0.1)
                 CreateTween(button, TweenInfo.new(0.15, Enum.EasingStyle.Back), {
-                    Size = UDim2.new(0, 180, 0, 42)
+                    Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42))
                 }):Play()
                 callback()
             end)
@@ -1073,7 +1194,7 @@ function VortexUI:CreateWindow(options)
         function tab:CreateSection(title)
             local sectionFrame = CreateElement("Frame", {
                 Name = "Section_" .. (title or ""),
-                Size = UDim2.new(1, 0, 0, 36),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(36)),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0
             })
@@ -1081,7 +1202,7 @@ function VortexUI:CreateWindow(options)
             
             local leftLine = CreateElement("Frame", {
                 Name = "LeftLine",
-                Size = UDim2.new(0.3, -10, 0, 1),
+                Size = UDim2.new(0.3, -GetResponsiveSize(10), 0, 1),
                 Position = UDim2.new(0, 0, 0.5, 0),
                 BackgroundColor3 = CONFIG.DIVIDER_COLOR,
                 BorderSizePixel = 0
@@ -1095,7 +1216,7 @@ function VortexUI:CreateWindow(options)
                 BackgroundTransparency = 1,
                 Text = title or "",
                 TextColor3 = CONFIG.MUTED_COLOR,
-                TextSize = 12,
+                TextSize = GetResponsiveFontSize(12),
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Center,
                 TextYAlignment = Enum.TextYAlignment.Center
@@ -1104,8 +1225,8 @@ function VortexUI:CreateWindow(options)
             
             local rightLine = CreateElement("Frame", {
                 Name = "RightLine",
-                Size = UDim2.new(0.3, -10, 0, 1),
-                Position = UDim2.new(0.7, 10, 0.5, 0),
+                Size = UDim2.new(0.3, -GetResponsiveSize(10), 0, 1),
+                Position = UDim2.new(0.7, GetResponsiveSize(10), 0.5, 0),
                 BackgroundColor3 = CONFIG.DIVIDER_COLOR,
                 BorderSizePixel = 0
             })
@@ -1130,11 +1251,11 @@ function VortexUI:CreateWindow(options)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label_" .. labelText,
-                Size = UDim2.new(1, 0, 0, 24),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(24)),
                 BackgroundTransparency = 1,
                 Text = labelText,
                 TextColor3 = textColor,
-                TextSize = 14,
+                TextSize = GetResponsiveFontSize(14),
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Center
@@ -1172,21 +1293,21 @@ function VortexUI:CreateWindow(options)
             AddCorner(paragraphFrame, CONFIG.CORNER_RADIUS)
             
             local paragraphPadding = CreateElement("UIPadding", {
-                PaddingTop = UDim.new(0, 14),
-                PaddingBottom = UDim.new(0, 14),
-                PaddingLeft = UDim.new(0, 16),
-                PaddingRight = UDim.new(0, 16)
+                PaddingTop = UDim.new(0, GetResponsiveSize(14)),
+                PaddingBottom = UDim.new(0, GetResponsiveSize(14)),
+                PaddingLeft = UDim.new(0, GetResponsiveSize(16)),
+                PaddingRight = UDim.new(0, GetResponsiveSize(16))
             })
             paragraphPadding.Parent = paragraphFrame
             
             local titleLabel = CreateElement("TextLabel", {
                 Name = "Title",
-                Size = UDim2.new(1, 0, 0, 20),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(20)),
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 Text = title,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 15,
+                TextSize = GetResponsiveFontSize(15),
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
@@ -1195,11 +1316,11 @@ function VortexUI:CreateWindow(options)
             local contentLabel = CreateElement("TextLabel", {
                 Name = "Content",
                 Size = UDim2.new(1, 0, 0, 0),
-                Position = UDim2.new(0, 0, 0, 26),
+                Position = UDim2.new(0, 0, 0, GetResponsiveSize(26)),
                 BackgroundTransparency = 1,
                 Text = content,
                 TextColor3 = CONFIG.SUB_TEXT_COLOR,
-                TextSize = 13,
+                TextSize = GetResponsiveFontSize(13),
                 Font = Enum.Font.Montserrat,
                 TextWrapped = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
@@ -1210,7 +1331,7 @@ function VortexUI:CreateWindow(options)
             local function updateSize()
                 local contentSize = contentLabel.TextBounds
                 contentLabel.Size = UDim2.new(1, 0, 0, contentSize.Y)
-                paragraphFrame.Size = UDim2.new(1, 0, 0, contentSize.Y + 54)
+                paragraphFrame.Size = UDim2.new(1, 0, 0, contentSize.Y + GetResponsiveSize(54))
             end
             
             contentLabel:GetPropertyChangedSignal("Text"):Connect(updateSize)
@@ -1242,7 +1363,7 @@ function VortexUI:CreateWindow(options)
             
             local toggleFrame = CreateElement("Frame", {
                 Name = "ToggleFrame_" .. toggleName,
-                Size = UDim2.new(1, 0, 0, 48),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(48)),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1257,12 +1378,12 @@ function VortexUI:CreateWindow(options)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, -80, 1, 0),
-                Position = UDim2.new(0, 16, 0, 0),
+                Size = UDim2.new(1, -GetResponsiveSize(80), 1, 0),
+                Position = UDim2.new(0, GetResponsiveSize(16), 0, 0),
                 BackgroundTransparency = 1,
                 Text = toggleName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
+                TextSize = GetResponsiveFontSize(14),
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
@@ -1271,8 +1392,8 @@ function VortexUI:CreateWindow(options)
             -- Modern pill-shaped toggle
             local toggleButton = CreateElement("TextButton", {
                 Name = "ToggleButton",
-                Size = UDim2.new(0, 48, 0, 26),
-                Position = UDim2.new(1, -64, 0.5, -13),
+                Size = GetResponsiveUDim2(UDim2.new(0, 48, 0, 26)),
+                Position = UDim2.new(1, -GetResponsiveSize(64), 0.5, -GetResponsiveSize(13)),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
                 Text = "",
@@ -1285,8 +1406,8 @@ function VortexUI:CreateWindow(options)
             
             local toggleIndicator = CreateElement("Frame", {
                 Name = "Indicator",
-                Size = UDim2.new(0, 20, 0, 20),
-                Position = UDim2.new(0, 3, 0.5, -10),
+                Size = GetResponsiveUDim2(UDim2.new(0, 20, 0, 20)),
+                Position = UDim2.new(0, GetResponsiveSize(3), 0.5, -GetResponsiveSize(10)),
                 BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0
             })
@@ -1303,7 +1424,7 @@ function VortexUI:CreateWindow(options)
                         BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.ACCENT_COLOR
                     }):Play()
                     CreateTween(toggleIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(0, 25, 0.5, -10),
+                        Position = UDim2.new(0, GetResponsiveSize(25), 0.5, -GetResponsiveSize(10)),
                         BackgroundColor3 = Color3.new(1, 1, 1)
                     }):Play()
                 else
@@ -1311,7 +1432,7 @@ function VortexUI:CreateWindow(options)
                         BackgroundColor3 = isLocked and Color3.fromRGB(50, 50, 55) or CONFIG.INPUT_COLOR
                     }):Play()
                     CreateTween(toggleIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(0, 3, 0.5, -10),
+                        Position = UDim2.new(0, GetResponsiveSize(3), 0.5, -GetResponsiveSize(10)),
                         BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
                 end
@@ -1374,7 +1495,7 @@ function VortexUI:CreateWindow(options)
             
             local sliderFrame = CreateElement("Frame", {
                 Name = "SliderFrame_" .. sliderName,
-                Size = UDim2.new(1, 0, 0, 64),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(64)),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1384,12 +1505,12 @@ function VortexUI:CreateWindow(options)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(0.7, -16, 0, 20),
-                Position = UDim2.new(0, 16, 0, 10),
+                Size = UDim2.new(0.7, -GetResponsiveSize(16), 0, GetResponsiveSize(20)),
+                Position = UDim2.new(0, GetResponsiveSize(16), 0, GetResponsiveSize(10)),
                 BackgroundTransparency = 1,
                 Text = sliderName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
+                TextSize = GetResponsiveFontSize(14),
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
@@ -1398,8 +1519,8 @@ function VortexUI:CreateWindow(options)
             -- Value display with accent background
             local valueDisplay = CreateElement("Frame", {
                 Name = "ValueDisplay",
-                Size = UDim2.new(0, 60, 0, 22),
-                Position = UDim2.new(1, -76, 0, 8),
+                Size = GetResponsiveUDim2(UDim2.new(0, 60, 0, 22)),
+                Position = UDim2.new(1, -GetResponsiveSize(76), 0, GetResponsiveSize(8)),
                 BackgroundColor3 = CONFIG.ACCENT_COLOR,
                 BackgroundTransparency = 0.85,
                 BorderSizePixel = 0
@@ -1413,7 +1534,7 @@ function VortexUI:CreateWindow(options)
                 BackgroundTransparency = 1,
                 Text = currentValue .. suffix,
                 TextColor3 = Color3.new(1, 1, 1),
-                TextSize = 12,
+                TextSize = GetResponsiveFontSize(12),
                 Font = Enum.Font.Montserrat
             })
             valueLabel.Parent = valueDisplay
@@ -1421,14 +1542,14 @@ function VortexUI:CreateWindow(options)
             -- Modern slider track
             local sliderTrack = CreateElement("Frame", {
                 Name = "SliderTrack",
-                Size = UDim2.new(1, -32, 0, 6),
-                Position = UDim2.new(0, 16, 0, 42),
+                Size = UDim2.new(1, -GetResponsiveSize(32), 0, GetResponsiveSize(6)),
+                Position = UDim2.new(0, GetResponsiveSize(16), 0, GetResponsiveSize(42)),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0
             })
             sliderTrack.Parent = sliderFrame
             
-            AddCorner(sliderTrack, UDim.new(0, 3))
+            AddCorner(sliderTrack, UDim.new(0, GetResponsiveSize(3)))
             
             local sliderFill = CreateElement("Frame", {
                 Name = "SliderFill",
@@ -1439,13 +1560,13 @@ function VortexUI:CreateWindow(options)
             })
             sliderFill.Parent = sliderTrack
             
-            AddCorner(sliderFill, UDim.new(0, 3))
+            AddCorner(sliderFill, UDim.new(0, GetResponsiveSize(3)))
             
             -- Modern slider thumb with glow
             local sliderButton = CreateElement("TextButton", {
                 Name = "SliderButton",
-                Size = UDim2.new(0, 18, 0, 18),
-                Position = UDim2.new(0, -9, 0.5, -9),
+                Size = GetResponsiveUDim2(UDim2.new(0, 18, 0, 18)),
+                Position = UDim2.new(0, -GetResponsiveSize(9), 0.5, -GetResponsiveSize(9)),
                 BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
                 Text = "",
@@ -1458,7 +1579,7 @@ function VortexUI:CreateWindow(options)
             -- Thumb glow
             local thumbGlow = CreateElement("Frame", {
                 Name = "ThumbGlow",
-                Size = UDim2.new(1, 8, 1, 8),
+                Size = GetResponsiveUDim2(UDim2.new(1, 8, 1, 8)),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundColor3 = CONFIG.ACCENT_COLOR,
@@ -1481,7 +1602,7 @@ function VortexUI:CreateWindow(options)
                     Size = UDim2.new(percentage, 0, 1, 0)
                 }):Play()
                 CreateTween(sliderButton, TweenInfo.new(0.1), {
-                    Position = UDim2.new(percentage, -9, 0.5, -9)
+                    Position = UDim2.new(percentage, -GetResponsiveSize(9), 0.5, -GetResponsiveSize(9))
                 }):Play()
                 
                 valueLabel.Text = value .. suffix
@@ -1496,7 +1617,7 @@ function VortexUI:CreateWindow(options)
             sliderButton.MouseButton1Down:Connect(function()
                 dragging = true
                 CreateTween(sliderButton, TweenInfo.new(0.15), {
-                    Size = UDim2.new(0, 22, 0, 22)
+                    Size = GetResponsiveUDim2(UDim2.new(0, 22, 0, 22))
                 }):Play()
                 CreateTween(thumbGlow, TweenInfo.new(0.15), {
                     BackgroundTransparency = 0.5
@@ -1516,7 +1637,7 @@ function VortexUI:CreateWindow(options)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = false
                     CreateTween(sliderButton, TweenInfo.new(0.15), {
-                        Size = UDim2.new(0, 18, 0, 18)
+                        Size = GetResponsiveUDim2(UDim2.new(0, 18, 0, 18))
                     }):Play()
                     CreateTween(thumbGlow, TweenInfo.new(0.15), {
                         BackgroundTransparency = 0.7
@@ -1617,14 +1738,13 @@ function VortexUI:CreateWindow(options)
             })
             chevronContainer.Parent = dropdownButton
             
-            local chevron = CreateElement("TextLabel", {
+            local chevron = CreateElement("ImageLabel", {
                 Name = "Chevron",
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Text = "▾",
-                TextColor3 = CONFIG.SUB_TEXT_COLOR,
-                TextSize = 14,
-                Font = Enum.Font.Montserrat,
+                Image = Icons["chevron-down"] or "rbxassetid://6031090509",
+                ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+                ImageTransparency = 0,
                 ZIndex = 33
             })
             chevron.Parent = chevronContainer
@@ -1738,7 +1858,7 @@ function VortexUI:CreateWindow(options)
                         BackgroundTransparency = 0
                     }):Play()
                     
-                    CreateTween(chevronContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
+                    CreateTween(chevron, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
                         Rotation = 180
                     }):Play()
                     
@@ -1762,7 +1882,7 @@ function VortexUI:CreateWindow(options)
                     })
                     tween:Play()
                     
-                    CreateTween(chevronContainer, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {
+                    CreateTween(chevron, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {
                         Rotation = 0
                     }):Play()
                     
