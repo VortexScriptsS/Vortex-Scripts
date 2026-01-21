@@ -716,18 +716,18 @@ function VortexUI:CreateWindow(options)
             -- Update icon to expand when minimized
             minimizeIcon.Image = Icons["expand"] or "rbxassetid://137492887754537"
         else
-            local restoredPos = keepInBounds(originalPosition, originalSize)
+            local restoredPos = keepInBounds(originalPosition, mainFrame.Size)
             
             if currentTween then currentTween:Cancel() end
             currentTween = TweenService:Create(mainFrame, tweenInfo, {
-                Size = originalSize,
+                Size = mainFrame.Size,
                 Position = restoredPos
             })
             currentTween:Play()
             
             -- Animate background frame for restored state
             local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
-                Size = UDim2.new(0, windowSize.X.Offset + backgroundOffset, 0, windowSize.Y.Offset + backgroundOffset),
+                Size = UDim2.new(0, mainFrame.Size.X.Offset + backgroundOffset, 0, mainFrame.Size.Y.Offset + backgroundOffset),
                 Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - GetResponsiveSize(5), restoredPos.Y.Scale, restoredPos.Y.Offset - GetResponsiveSize(5))
             })
             backgroundTween:Play()
@@ -777,7 +777,8 @@ function VortexUI:CreateWindow(options)
             boundedPosition.Y.Scale, 
             boundedPosition.Y.Offset - backgroundOffset
         )
-    end
+        -- Update background frame size to match main frame
+        backgroundFrame.Size = UDim2.new(0, (isMinimized and minimizedSize or mainFrame.Size).X.Offset + backgroundOffset, 0, (isMinimized and minimizedSize or mainFrame.Size).Y.Offset + backgroundOffset)
     
     local function handleDragStart(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -1973,6 +1974,11 @@ function VortexUI:CreateWindow(options)
                     local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
                     if contentArea then
                         contentArea.ClipsDescendants = false
+                        
+                        -- Update dropdown position calculation to account for window resize
+                        local dropdownAbsPos = dropdownButton.AbsolutePosition
+                        local dropdownAbsSize = dropdownButton.AbsoluteSize
+                        optionsListFrame.Position = UDim2.new(0, dropdownAbsPos.X, 0, dropdownAbsPos.Y + dropdownAbsSize.Y)
                         
                         local dropdownBottom = dropdownFrame.AbsolutePosition.Y + dropdownFrame.AbsoluteSize.Y + openHeight
                         local contentBottom = contentArea.AbsolutePosition.Y + contentArea.AbsoluteSize.Y
