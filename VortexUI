@@ -779,6 +779,7 @@ function VortexUI:CreateWindow(options)
         )
         -- Update background frame size to match main frame
         backgroundFrame.Size = UDim2.new(0, (isMinimized and minimizedSize or mainFrame.Size).X.Offset + backgroundOffset, 0, (isMinimized and minimizedSize or mainFrame.Size).Y.Offset + backgroundOffset)
+    end
     
     local function handleDragStart(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -2853,4 +2854,3 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
 end
 
 return VortexUI
-
