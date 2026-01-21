@@ -848,11 +848,14 @@ function VortexUI:CreateWindow(options)
             
             mainFrame.Size = boundedSize
             
-            -- Update background frame
+            -- Update background frame to always match main frame
             if backgroundFrame then
-                backgroundFrame.Size = UDim2.new(0, boundedSize.X.Offset + backgroundOffset, 0, boundedSize.Y.Offset + backgroundOffset)
-                backgroundFrame.Position = UDim2.new(0.5, -(boundedSize.X.Offset + backgroundOffset)/2, 0.5, -(boundedSize.Y.Offset + backgroundOffset)/2)
+                backgroundFrame.Size = UDim2.new(0, mainFrame.Size.X.Offset + backgroundOffset, 0, mainFrame.Size.Y.Offset + backgroundOffset)
+                backgroundFrame.Position = UDim2.new(0.5, -(mainFrame.Size.X.Offset + backgroundOffset)/2, 0.5, -(mainFrame.Size.Y.Offset + backgroundOffset)/2)
             end
+            
+            -- Update resize handle position to stay in corner
+            resizeHandle.Position = UDim2.new(1, -20, 1, -20)
         end
     end
     
@@ -1958,13 +1961,13 @@ function VortexUI:CreateWindow(options)
                     optionsListFrame.Size = UDim2.new(1, -32, 0, 0)
                     optionsListFrame.BackgroundTransparency = 1
                     
-                    dropdownFrame.ZIndex = 100
-                    optionsListFrame.ZIndex = 101
-                    label.ZIndex = 102
-                    dropdownButton.ZIndex = 102
-                    selectedText.ZIndex = 103
-                    chevronContainer.ZIndex = 103
-                    chevron.ZIndex = 104
+                    dropdownFrame.ZIndex = 1000
+                    optionsListFrame.ZIndex = 1001
+                    label.ZIndex = 1002
+                    dropdownButton.ZIndex = 1002
+                    selectedText.ZIndex = 1003
+                    chevronContainer.ZIndex = 1003
+                    chevron.ZIndex = 1004
                     
                     -- Ensure dropdown can extend beyond content area
                     local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
@@ -2043,6 +2046,12 @@ function VortexUI:CreateWindow(options)
                             local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
                             if contentArea then
                                 contentArea.ClipsDescendants = true
+                            end
+                            
+                            -- Restore ZIndex on content area
+                            local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
+                            if contentArea then
+                                contentArea.ZIndex = 1
                             end
                         end
                     end)
