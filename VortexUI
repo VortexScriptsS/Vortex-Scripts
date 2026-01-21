@@ -490,13 +490,13 @@ function VortexUI:CreateWindow(options)
     minimizeButton.Parent = controlsContainer
     AddCorner(minimizeButton, UDim.new(0, GetResponsiveSize(8)))
     
-    local minimizeIcon = CreateElement("TextLabel", {
+    local minimizeIcon = CreateElement("ImageLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
-        Text = "−",
-        TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = GetResponsiveFontSize(20),
-        Font = Enum.Font.Montserrat
+        Image = Icons["minimize-2"] or "rbxassetid://116269596042539",
+        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+        ImageTransparency = 0,
+        ScaleType = Enum.ScaleType.Fit
     })
     minimizeIcon.Parent = minimizeButton
     
@@ -514,13 +514,13 @@ function VortexUI:CreateWindow(options)
     closeButton.Parent = controlsContainer
     AddCorner(closeButton, UDim.new(0, GetResponsiveSize(8)))
     
-    local closeIcon = CreateElement("TextLabel", {
+    local closeIcon = CreateElement("ImageLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
-        Text = "×",
-        TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = GetResponsiveFontSize(22),
-        Font = Enum.Font.Montserrat
+        Image = Icons["circle-x"] or "rbxassetid://76821953846248",
+        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+        ImageTransparency = 0,
+        ScaleType = Enum.ScaleType.Fit
     })
     closeIcon.Parent = closeButton
     
@@ -530,7 +530,7 @@ function VortexUI:CreateWindow(options)
             BackgroundTransparency = 0
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            TextColor3 = CONFIG.TEXT_COLOR
+            ImageColor3 = CONFIG.TEXT_COLOR
         }):Play()
     end)
     
@@ -539,7 +539,7 @@ function VortexUI:CreateWindow(options)
             BackgroundTransparency = 1
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            TextColor3 = CONFIG.SUB_TEXT_COLOR
+            ImageColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -549,7 +549,7 @@ function VortexUI:CreateWindow(options)
             BackgroundColor3 = CONFIG.ERROR_COLOR
         }):Play()
         CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            TextColor3 = CONFIG.TEXT_COLOR
+            ImageColor3 = CONFIG.TEXT_COLOR
         }):Play()
     end)
     
@@ -559,7 +559,7 @@ function VortexUI:CreateWindow(options)
             BackgroundColor3 = CONFIG.INPUT_COLOR
         }):Play()
         CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            TextColor3 = CONFIG.SUB_TEXT_COLOR
+            ImageColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -693,6 +693,9 @@ function VortexUI:CreateWindow(options)
             
             headerBar.Size = UDim2.new(1, 0, 1, 0)
             titleLabel.Visible = false
+            
+            -- Update icon to expand when minimized
+            minimizeIcon.Image = Icons["expand"] or "rbxassetid://137492887754537"
         else
             local restoredPos = keepInBounds(originalPosition, originalSize)
             
@@ -723,6 +726,9 @@ function VortexUI:CreateWindow(options)
             
             headerBar.Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
             originalPosition = restoredPos
+            
+            -- Update icon to minimize-2 when restored
+            minimizeIcon.Image = Icons["minimize-2"] or "rbxassetid://116269596042539"
         end
     end
     
@@ -1853,6 +1859,29 @@ function VortexUI:CreateWindow(options)
                     chevronContainer.ZIndex = 103
                     chevron.ZIndex = 104
                     
+                    -- Check if dropdown would go beyond visible area and adjust scroll
+                    local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
+                    if contentArea then
+                        local dropdownBottom = dropdownFrame.AbsolutePosition.Y + dropdownFrame.AbsoluteSize.Y + openHeight
+                        local contentBottom = contentArea.AbsolutePosition.Y + contentArea.AbsoluteSize.Y
+                        local contentTop = contentArea.AbsolutePosition.Y
+                        
+                        -- If dropdown would go below visible area, scroll to make it visible
+                        if dropdownBottom > contentBottom then
+                            local extraSpace = dropdownBottom - contentBottom
+                            local currentScroll = contentArea.CanvasPosition.Y
+                            local newScroll = math.min(currentScroll + extraSpace + 10, contentArea.CanvasSize.Y - contentArea.AbsoluteSize.Y)
+                            contentArea.CanvasPosition = Vector2.new(0, newScroll)
+                        end
+                        
+                        -- If dropdown would go above visible area, scroll up
+                        if dropdownFrame.AbsolutePosition.Y < contentTop then
+                            local currentScroll = contentArea.CanvasPosition.Y
+                            local newScroll = math.max(currentScroll - (contentTop - dropdownFrame.AbsolutePosition.Y) - 10, 0)
+                            contentArea.CanvasPosition = Vector2.new(0, newScroll)
+                        end
+                    end
+                    
                     CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, -32, 0, openHeight),
                         BackgroundTransparency = 0
@@ -1979,8 +2008,15 @@ function VortexUI:CreateWindow(options)
                         -- Update all options
                         for _, child in pairs(optionsListFrame:GetChildren()) do
                             if child:IsA("TextButton") then
-                                local childLabel = child:FindFirstChild("TextLabel")
+                                local childLabel = child:FindFirstChildWhichIsA("TextLabel")
                                 local childCheck = child:FindFirstChildWhichIsA("TextLabel", true)
+                                -- Find the checkmark by looking for the one with "✓" text
+                                for _, grandChild in pairs(child:GetChildren()) do
+                                    if grandChild:IsA("TextLabel") and grandChild.Text == "✓" then
+                                        childCheck = grandChild
+                                        break
+                                    end
+                                end
                                 if childCheck and childCheck.Text == "✓" then
                                     childCheck.Visible = false
                                 end
