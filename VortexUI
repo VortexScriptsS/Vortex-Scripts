@@ -1725,7 +1725,7 @@ function VortexUI:CreateWindow(options)
                 Position = UDim2.new(0, 14, 0, 0),
                 BackgroundTransparency = 1,
                 Text = currentOption or "Select option...",
-                TextColor3 = currentOption and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR,
+                TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = 13,
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
@@ -1810,10 +1810,10 @@ function VortexUI:CreateWindow(options)
                 if multipleOptions then
                     local text = #selectedOptions > 0 and table.concat(selectedOptions, ", ") or "Select options..."
                     selectedText.Text = text
-                    selectedText.TextColor3 = #selectedOptions > 0 and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR
+                    selectedText.TextColor3 = CONFIG.TEXT_COLOR
                 else
                     selectedText.Text = selectedOptions or "Select option..."
-                    selectedText.TextColor3 = selectedOptions and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR
+                    selectedText.TextColor3 = CONFIG.TEXT_COLOR
                 end
             end
             
@@ -1858,6 +1858,18 @@ function VortexUI:CreateWindow(options)
                     selectedText.ZIndex = 103
                     chevronContainer.ZIndex = 103
                     chevron.ZIndex = 104
+                    
+                    -- Move options list to main frame to avoid clipping
+                    local originalParent = optionsListFrame.Parent
+                    local mainScreenGui = dropdownFrame:FindFirstAncestorWhichIsA("ScreenGui")
+                    if mainScreenGui then
+                        optionsListFrame.Parent = mainScreenGui
+                        
+                        -- Update position to be relative to the dropdown button
+                        local dropdownAbsPos = dropdownButton.AbsolutePosition
+                        local dropdownAbsSize = dropdownButton.AbsoluteSize
+                        optionsListFrame.Position = UDim2.new(0, dropdownAbsPos.X, 0, dropdownAbsPos.Y + dropdownAbsSize.Y)
+                    end
                     
                     -- Ensure dropdown can extend beyond content area
                     local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
@@ -1931,6 +1943,18 @@ function VortexUI:CreateWindow(options)
                             selectedText.ZIndex = 32
                             chevronContainer.ZIndex = 32
                             chevron.ZIndex = 33
+                            
+                            -- Restore original parent and ClipsDescendants
+                            if originalParent then
+                                optionsListFrame.Parent = originalParent
+                                optionsListFrame.Position = UDim2.new(0, 16, 0, 68)
+                            end
+                            
+                            -- Restore ClipsDescendants on content area
+                            local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
+                            if contentArea then
+                                contentArea.ClipsDescendants = true
+                            end
                         end
                     end)
                 end
