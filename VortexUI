@@ -376,6 +376,24 @@ function VortexUI:CreateWindow(options)
     -- Remove border from main frame
     -- local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
     
+    -- Resize Handle
+    local resizeHandle = CreateElement("Frame", {
+        Name = "ResizeHandle",
+        Size = GetResponsiveUDim2(UDim2.new(0, 20, 0, 20)),
+        Position = UDim2.new(1, -20, 1, -20),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BackgroundTransparency = 0.7,
+        BorderSizePixel = 0,
+        ZIndex = 1000
+    })
+    resizeHandle.Parent = mainFrame
+    AddCorner(resizeHandle, UDim.new(0, GetResponsiveSize(4)))
+    
+    -- Resize handle hover effect
+    local isResizing = false
+    local resizeStartPos = nil
+    local resizeStartSize = nil
+    
     -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
         Name = "HeaderBar",
@@ -690,6 +708,7 @@ function VortexUI:CreateWindow(options)
             
             if contentArea then contentArea.Visible = false end
             if sidebarFrame then sidebarFrame.Visible = false end
+            if resizeHandle then resizeHandle.Visible = false end
             
             headerBar.Size = UDim2.new(1, 0, 1, 0)
             titleLabel.Visible = false
@@ -723,6 +742,7 @@ function VortexUI:CreateWindow(options)
             if contentArea then contentArea.Visible = true end
             if sidebarFrame then sidebarFrame.Visible = true end
             if titleLabel then titleLabel.Visible = true end
+            if resizeHandle then resizeHandle.Visible = true end
             
             headerBar.Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
             originalPosition = restoredPos
@@ -789,6 +809,93 @@ function VortexUI:CreateWindow(options)
     
     setupDrag(headerBar)
     setupDrag(logoFrame)
+    
+    -- Resize functionality
+    local function handleResizeStart(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isResizing = true
+            resizeStartPos = input.Position
+            resizeStartSize = mainFrame.Size
+            
+            -- Visual feedback
+            CreateTween(resizeHandle, TweenInfo.new(0.1), {
+                BackgroundTransparency = 0.3
+            }):Play()
+        end
+    end
+    
+    local function handleResizeChanged(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and isResizing then
+            local delta = input.Position - resizeStartPos
+            local newSize = UDim2.new(
+                resizeStartSize.X.Scale,
+                math.max(GetResponsiveSize(300), resizeStartSize.X.Offset + delta.X),
+                resizeStartSize.Y.Scale,
+                math.max(GetResponsiveSize(200), resizeStartSize.Y.Offset + delta.Y)
+            )
+            
+            -- Apply new size with bounds checking
+            local viewportSize = workspace.CurrentCamera.ViewportSize
+            local maxX = viewportSize.X - newSize.X.Offset
+            local maxY = viewportSize.Y - newSize.Y.Offset
+            
+            local boundedSize = UDim2.new(
+                newSize.X.Scale,
+                math.min(newSize.X.Offset, maxX),
+                newSize.Y.Scale,
+                math.min(newSize.Y.Offset, maxY)
+            )
+            
+            mainFrame.Size = boundedSize
+            
+            -- Update background frame
+            if backgroundFrame then
+                backgroundFrame.Size = UDim2.new(0, boundedSize.X.Offset + backgroundOffset, 0, boundedSize.Y.Offset + backgroundOffset)
+                backgroundFrame.Position = UDim2.new(0.5, -(boundedSize.X.Offset + backgroundOffset)/2, 0.5, -(boundedSize.Y.Offset + backgroundOffset)/2)
+            end
+        end
+    end
+    
+    local function handleResizeEnd(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isResizing = false
+            resizeStartPos = nil
+            resizeStartSize = nil
+            
+            -- Restore visual feedback
+            CreateTween(resizeHandle, TweenInfo.new(0.1), {
+                BackgroundTransparency = 0.7
+            }):Play()
+            
+            if not isMinimized then
+                originalSize = mainFrame.Size
+                originalPosition = mainFrame.Position
+            end
+        end
+    end
+    
+    local function setupResize(element)
+        element.InputBegan:Connect(handleResizeStart)
+        element.InputChanged:Connect(handleResizeChanged)
+        element.InputEnded:Connect(handleResizeEnd)
+    end
+    
+    setupResize(resizeHandle)
+    
+    -- Resize handle hover effect
+    resizeHandle.MouseEnter:Connect(function()
+        CreateTween(resizeHandle, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0.4
+        }):Play()
+    end)
+    
+    resizeHandle.MouseLeave:Connect(function()
+        if not isResizing then
+            CreateTween(resizeHandle, TweenInfo.new(0.15), {
+                BackgroundTransparency = 0.7
+            }):Play()
+        end
+    end)
     
     local dragConnection = UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
@@ -1859,18 +1966,6 @@ function VortexUI:CreateWindow(options)
                     chevronContainer.ZIndex = 103
                     chevron.ZIndex = 104
                     
-                    -- Move options list to main frame to avoid clipping
-                    local originalParent = optionsListFrame.Parent
-                    local mainScreenGui = dropdownFrame:FindFirstAncestorWhichIsA("ScreenGui")
-                    if mainScreenGui then
-                        optionsListFrame.Parent = mainScreenGui
-                        
-                        -- Update position to be relative to the dropdown button
-                        local dropdownAbsPos = dropdownButton.AbsolutePosition
-                        local dropdownAbsSize = dropdownButton.AbsoluteSize
-                        optionsListFrame.Position = UDim2.new(0, dropdownAbsPos.X, 0, dropdownAbsPos.Y + dropdownAbsSize.Y)
-                    end
-                    
                     -- Ensure dropdown can extend beyond content area
                     local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
                     if contentArea then
@@ -1943,12 +2038,6 @@ function VortexUI:CreateWindow(options)
                             selectedText.ZIndex = 32
                             chevronContainer.ZIndex = 32
                             chevron.ZIndex = 33
-                            
-                            -- Restore original parent and ClipsDescendants
-                            if originalParent then
-                                optionsListFrame.Parent = originalParent
-                                optionsListFrame.Position = UDim2.new(0, 16, 0, 68)
-                            end
                             
                             -- Restore ClipsDescendants on content area
                             local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
