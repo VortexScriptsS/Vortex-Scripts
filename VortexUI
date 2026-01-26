@@ -1373,9 +1373,6 @@ function VortexUI:CreateWindow(options)
             
             WindowInstances[window].Tabs[tabName].Elements[buttonName] = button
             
-            task.wait()
-            updateCanvasSize()
-            
             local element = {}
             function element:Set(newName)
                 button.Text = newName
@@ -1431,9 +1428,6 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
-            task.wait()
-            updateCanvasSize()
-            
             return element
         end
         
@@ -1463,9 +1457,6 @@ function VortexUI:CreateWindow(options)
                     label.TextColor3 = newIgnoreTheme and Color3.fromRGB(255, 255, 255) or CONFIG.TEXT_COLOR
                 end
             end
-            
-            task.wait()
-            updateCanvasSize()
             
             return element
         end
@@ -1537,9 +1528,6 @@ function VortexUI:CreateWindow(options)
                 if data.TitleColor ~= nil then titleLabel.TextColor3 = data.TitleColor end
                 if data.ContentColor ~= nil then contentLabel.TextColor3 = data.ContentColor end
             end
-            
-            task.wait()
-            updateCanvasSize()
             
             return element
         end
@@ -1668,9 +1656,6 @@ function VortexUI:CreateWindow(options)
             function element:IsLocked()
                 return isLocked
             end
-            
-            task.wait()
-            updateCanvasSize()
             
             return element
         end
@@ -1841,9 +1826,6 @@ function VortexUI:CreateWindow(options)
             TrackConnection(dragEndConnection, window)
             
             WindowInstances[window].Tabs[tabName].Elements[sliderName] = sliderFrame
-            
-            task.wait()
-            updateCanvasSize()
             
             local element = {}
             function element:Set(value)
@@ -2475,9 +2457,6 @@ function VortexUI:CreateWindow(options)
             end)
             
             WindowInstances[window].Tabs[tabName].Elements[inputName] = inputFrame
-            
-            task.wait()
-            updateCanvasSize()
             
             local element = {}
             function element:Set(text)
