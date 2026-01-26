@@ -2507,9 +2507,6 @@ function VortexUI:CreateWindow(options)
             CreateTween(tabContent, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {
                 BackgroundTransparency = 0
             }):Play()
-            
-            task.wait()
-            updateCanvasSize()
         else
             tabContent.Visible = false
         end
