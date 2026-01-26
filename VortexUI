@@ -7,26 +7,120 @@ local player = game.Players.LocalPlayer
 -- Load Icons module
 local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"))()
 
--- Configuration
+-- =============================================================================
+-- CONFIGURATION & DESIGN SYSTEM
+-- =============================================================================
+
+-- Modernized color palette with better contrast and depth
 local CONFIG = {
-    PRIMARY_COLOR = Color3.fromRGB(18, 18, 18),
-    SECONDARY_COLOR = Color3.fromRGB(28, 28, 28),
-    PANEL_COLOR = Color3.fromRGB(35, 35, 35),
-    INPUT_COLOR = Color3.fromRGB(45, 45, 45),
-    TEXT_COLOR = Color3.fromRGB(240, 240, 240),
-    SUB_TEXT_COLOR = Color3.fromRGB(180, 180, 180),
-    BORDER_COLOR = Color3.fromRGB(50, 50, 50),
+    -- Base colors - deeper, richer tones
+    PRIMARY_COLOR = Color3.fromRGB(16, 16, 16),
+    SECONDARY_COLOR = Color3.fromRGB(22, 22, 26),
+    PANEL_COLOR = Color3.fromRGB(32, 32, 38),
+    INPUT_COLOR = Color3.fromRGB(40, 40, 48),
     
-    ACCENT_COLOR = Color3.fromRGB(99, 102, 241),
-    ACCENT_HOVER = Color3.fromRGB(124, 119, 255),
+    -- Text colors with better hierarchy
+    TEXT_COLOR = Color3.fromRGB(255, 255, 255),
+    SUB_TEXT_COLOR = Color3.fromRGB(180, 180, 180),
+    MUTED_COLOR = Color3.fromRGB(120, 120, 120),
+    
+    -- Border and divider colors
+    BORDER_COLOR = Color3.fromRGB(55, 55, 65),
+    DIVIDER_COLOR = Color3.fromRGB(45, 45, 55),
+    
+    -- Accent colors - neutral blended theme
+    ACCENT_COLOR = Color3.fromRGB(59, 130, 246),
+    ACCENT_HOVER = Color3.fromRGB(37, 99, 235),
+    ACCENT_GLOW = Color3.fromRGB(96, 165, 250),
+    
+    -- Status colors
     SUCCESS_COLOR = Color3.fromRGB(34, 197, 94),
+    SUCCESS_GLOW = Color3.fromRGB(74, 222, 128),
     ERROR_COLOR = Color3.fromRGB(239, 68, 68),
+    ERROR_GLOW = Color3.fromRGB(252, 129, 129),
     WARNING_COLOR = Color3.fromRGB(245, 158, 11),
     
-    CORNER_RADIUS = UDim.new(0, 12),
+    -- Design tokens
+    CORNER_RADIUS = UDim.new(0, 10),
+    CORNER_RADIUS_SM = UDim.new(0, 6),
+    CORNER_RADIUS_LG = UDim.new(0, 14),
+    CORNER_RADIUS_XL = UDim.new(0, 18),
     BORDER_THICKNESS = 1,
-    TRANSITION_TIME = 0.25
+    TRANSITION_TIME = 0.25,
+    TRANSITION_TIME_FAST = 0.15,
+    
+    -- Shadow colors for depth
+    SHADOW_COLOR = Color3.fromRGB(0, 0, 0),
+    SHADOW_TRANSPARENCY = 0.6
 }
+
+-- =============================================================================
+-- RESPONSIVE DESIGN SYSTEM
+-- =============================================================================
+
+local Responsive = {
+    Breakpoints = {
+        Mobile = { Width = 768, Height = 1024 },
+        Tablet = { Width = 1024, Height = 768 },
+        Desktop = { Width = 1920, Height = 1080 }
+    },
+    
+    ScaleFactors = {
+        Mobile = { UI = 0.7, Font = 0.85, Spacing = 0.8 },
+        Tablet = { UI = 0.85, Font = 0.9, Spacing = 0.9 },
+        Desktop = { UI = 1.0, Font = 1.0, Spacing = 1.0 }
+    },
+    
+    CurrentCategory = "Desktop",
+    CurrentScale = { UI = 1.0, Font = 1.0, Spacing = 1.0 }
+}
+
+local function GetScreenCategory()
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    local width, height = viewportSize.X, viewportSize.Y
+    
+    if width <= Responsive.Breakpoints.Mobile.Width or height <= Responsive.Breakpoints.Mobile.Height then
+        return "Mobile"
+    elseif width <= Responsive.Breakpoints.Tablet.Width or height <= Responsive.Breakpoints.Tablet.Height then
+        return "Tablet"
+    else
+        return "Desktop"
+    end
+end
+
+local function UpdateResponsiveScale()
+    local category = GetScreenCategory()
+    Responsive.CurrentCategory = category
+    Responsive.CurrentScale = Responsive.ScaleFactors[category]
+end
+
+local function GetResponsiveSize(baseSize, scaleType)
+    scaleType = scaleType or "UI"
+    local scale = Responsive.CurrentScale[scaleType] or 1.0
+    return baseSize * scale
+end
+
+local function GetResponsiveUDim2(baseUDim2, scaleX, scaleY)
+    scaleX = scaleX or "UI"
+    scaleY = scaleY or "UI"
+    local scaleXValue = Responsive.CurrentScale[scaleX] or 1.0
+    local scaleYValue = Responsive.CurrentScale[scaleY] or 1.0
+    
+    return UDim2.new(
+        baseUDim2.X.Scale,
+        baseUDim2.X.Offset * scaleXValue,
+        baseUDim2.Y.Scale,
+        baseUDim2.Y.Offset * scaleYValue
+    )
+end
+
+local function GetResponsiveFontSize(baseSize)
+    return math.max(10, GetResponsiveSize(baseSize, "Font"))
+end
+
+-- =============================================================================
+-- STATE MANAGEMENT
+-- =============================================================================
 
 -- Storage for elements and their states
 local Elements = {}
@@ -39,6 +133,10 @@ local KeySystem = {
     LastValidKey = nil
 }
 
+-- =============================================================================
+-- CLEANUP SYSTEM
+-- =============================================================================
+
 -- Cleanup system for stopping operations when UI is destroyed
 local CleanupManager = {
     ActiveConnections = {},
@@ -47,49 +145,6 @@ local CleanupManager = {
     CleanupCallbacks = {}
 }
 
--- Utility Functions
-local function CreateElement(elementType, properties)
-    local element = Instance.new(elementType)
-    for prop, value in pairs(properties) do
-        if typeof(value) == "EnumItem" or typeof(value) == "Color3" or typeof(value) == "UDim2" or typeof(value) == "UDim" or typeof(value) == "boolean" then
-            element[prop] = value
-        else
-            element[prop] = value
-        end
-    end
-    
-    -- Ensure TextButton has proper defaults if not set
-    if elementType == "TextButton" then
-        element.AutoButtonColor = properties.AutoButtonColor ~= false
-        element.TextColor3 = properties.TextColor3 or Color3.new(1, 1, 1)
-        element.TextSize = properties.TextSize or 14
-        element.Font = properties.Font or Enum.Font.Gotham
-    end
-    
-    return element
-end
-
-local function AddCorner(parent, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = radius or CONFIG.CORNER_RADIUS
-    corner.Parent = parent
-    return corner
-end
-
-local function AddStroke(parent, thickness, color)
-    local stroke = CreateElement("UIStroke", {
-        Thickness = thickness or CONFIG.BORDER_THICKNESS,
-        Color = color or CONFIG.BORDER_COLOR
-    })
-    stroke.Parent = parent
-    return stroke
-end
-
-local function CreateTween(object, info, properties)
-    return TweenService:Create(object, info, properties)
-end
-
--- Cleanup Manager Functions
 local function TrackConnection(connection, window)
     if not CleanupManager.ActiveConnections[window] then
         CleanupManager.ActiveConnections[window] = {}
@@ -120,7 +175,6 @@ local function AddCleanupCallback(callback, window)
 end
 
 local function CleanupWindow(window)
-    -- Disconnect all tracked connections
     if CleanupManager.ActiveConnections[window] then
         for _, connection in ipairs(CleanupManager.ActiveConnections[window]) do
             if connection and connection.Disconnect then
@@ -130,27 +184,24 @@ local function CleanupWindow(window)
         CleanupManager.ActiveConnections[window] = {}
     end
     
-    -- Stop all tracked loops
     if CleanupManager.ActiveLoops[window] then
         for loopName, loopFunction in pairs(CleanupManager.ActiveLoops[window]) do
             if type(loopFunction) == "function" then
-                pcall(loopFunction, false) -- Pass false to stop loops
+                pcall(loopFunction, false)
             end
         end
         CleanupManager.ActiveLoops[window] = {}
     end
     
-    -- Reset all tracked toggles to false
     if CleanupManager.ActiveToggles[window] then
         for toggleName, toggleCallback in pairs(CleanupManager.ActiveToggles[window]) do
             if type(toggleCallback) == "function" then
-                pcall(toggleCallback, false) -- Set toggle to false
+                pcall(toggleCallback, false)
             end
         end
         CleanupManager.ActiveToggles[window] = {}
     end
     
-    -- Call all cleanup callbacks
     if CleanupManager.CleanupCallbacks[window] then
         for _, callback in ipairs(CleanupManager.CleanupCallbacks[window]) do
             if type(callback) == "function" then
@@ -160,7 +211,6 @@ local function CleanupWindow(window)
         CleanupManager.CleanupCallbacks[window] = {}
     end
     
-    -- Clear all toggle states
     for flag in pairs(ToggleStates) do
         if type(ToggleStates[flag]) == "boolean" then
             ToggleStates[flag] = false
@@ -168,39 +218,127 @@ local function CleanupWindow(window)
     end
 end
 
+-- =============================================================================
+-- UTILITY FUNCTIONS
+-- =============================================================================
+
+local function CreateElement(elementType, properties)
+    local element = Instance.new(elementType)
+    for prop, value in pairs(properties) do
+        if typeof(value) == "EnumItem" or typeof(value) == "Color3" or typeof(value) == "UDim2" or typeof(value) == "UDim" or typeof(value) == "boolean" then
+            element[prop] = value
+        else
+            element[prop] = value
+        end
+    end
+    
+    if elementType == "TextButton" then
+        element.AutoButtonColor = properties.AutoButtonColor ~= false
+        element.TextColor3 = properties.TextColor3 or Color3.new(1, 1, 1)
+        element.TextSize = properties.TextSize or 14
+        element.Font = properties.Font or Enum.Font.Montserrat
+    end
+    
+    return element
+end
+
+local function AddCorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = radius or CONFIG.CORNER_RADIUS
+    corner.Parent = parent
+    return corner
+end
+
+-- Enhanced stroke with optional glow effect
+local function AddStroke(parent, thickness, color, transparency)
+    local stroke = CreateElement("UIStroke", {
+        Thickness = thickness or CONFIG.BORDER_THICKNESS,
+        Color = color or CONFIG.BORDER_COLOR,
+        Transparency = transparency or 0
+    })
+    stroke.Parent = parent
+    return stroke
+end
+
+-- New utility for adding drop shadows
+local function AddShadow(parent, offset, spread, transparency)
+    offset = offset or 4
+    spread = spread or 8
+    transparency = transparency or 0.7
+    
+    local shadow = CreateElement("ImageLabel", {
+        Name = "Shadow",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.5, 0, 0.5, offset),
+        Size = UDim2.new(1, spread * 2, 1, spread * 2),
+        ZIndex = parent.ZIndex - 1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = CONFIG.SHADOW_COLOR,
+        ImageTransparency = transparency,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    })
+    shadow.Parent = parent
+    return shadow
+end
+
+-- New utility for gradient backgrounds
+local function AddGradient(parent, startColor, endColor, rotation)
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, startColor or parent.BackgroundColor3),
+        ColorSequenceKeypoint.new(1, endColor or Color3.new(
+            math.max(0, parent.BackgroundColor3.R - 0.03),
+            math.max(0, parent.BackgroundColor3.G - 0.03),
+            math.max(0, parent.BackgroundColor3.B - 0.03)
+        ))
+    }
+    gradient.Rotation = rotation or 90
+    gradient.Parent = parent
+    return gradient
+end
+
+local function CreateTween(object, info, properties)
+    return TweenService:Create(object, info, properties)
+end
+
+-- =============================================================================
+-- MAIN WINDOW SYSTEM
+-- =============================================================================
+
 -- Main Window Creation
 function VortexUI:CreateWindow(options)
     local windowName = options.Name or "Vortex UI"
     local keySystem = options.KeySystem or nil
     local onWindowCreated = options.OnWindowCreated or nil
     
-    -- Setup key system if provided
+    -- Initialize responsive scale
+    UpdateResponsiveScale()
+    
     if keySystem then
         KeySystem.Enabled = true
         KeySystem.ValidKeys = keySystem.ValidKeys or {}
         KeySystem.Authenticated = false
         
-        -- Show key authentication window first
         if not KeySystem.Authenticated then
             VortexUI:ShowKeyWindow(function(success)
                 if success then
                     KeySystem.Authenticated = true
-                    -- Create the actual window after successful authentication
                     local windowOptions = {
                         Name = windowName,
-                        KeySystem = nil,  -- Remove key system to avoid recursion
+                        KeySystem = nil,
                         OnWindowCreated = onWindowCreated
                     }
                     VortexUI:CreateWindow(windowOptions)
                 end
             end, KeySystem)
-            return nil  -- Return nil initially, actual window created in callback
+            return nil
         end
     end
     
     local window = {}
     
-    -- Create ScreenGui
     local CoreGui = game:GetService("CoreGui")
     for _, child in ipairs(CoreGui:GetChildren()) do
         if child.Name == "VortexUI" then
@@ -214,130 +352,253 @@ function VortexUI:CreateWindow(options)
     })
     screenGui.Parent = CoreGui
     
-    -- Main Frame
+    -- Main Frame with enhanced styling and shadow
+    local baseWindowSize = UDim2.new(0, 600, 0, 400)
+    local windowSize = GetResponsiveUDim2(baseWindowSize)
+    local windowPos = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2)
+    
     local mainFrame = CreateElement("Frame", {
         Name = "MainFrame",
-        Size = UDim2.new(0, 800, 0, 500),
-        Position = UDim2.new(0.5, -400, 0.5, -250),
+        Size = windowSize,
+        Position = windowPos,
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     mainFrame.Parent = screenGui
     
-    -- Explicitly add UICorner to mainFrame with specific radius
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 12)
-    mainCorner.Parent = mainFrame
-    AddStroke(mainFrame)
+    -- Background frame with rounded corners for visual effect
+    local backgroundOffset = GetResponsiveSize(10)
+    local backgroundFrame = CreateElement("Frame", {
+        Name = "BackgroundFrame",
+        Size = UDim2.new(0, windowSize.X.Offset + backgroundOffset, 0, windowSize.Y.Offset + backgroundOffset),
+        Position = UDim2.new(0.5, -(windowSize.X.Offset + backgroundOffset)/2, 0.5, -(windowSize.Y.Offset + backgroundOffset)/2),
+        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+        BorderSizePixel = 0,
+        ZIndex = mainFrame.ZIndex - 1
+    })
+    backgroundFrame.Parent = screenGui
     
-    -- Header Bar
+    local backgroundCorner = Instance.new("UICorner")
+    backgroundCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    backgroundCorner.Parent = backgroundFrame
+    
+    -- Remove border from background frame
+    -- local backgroundStroke = AddStroke(backgroundFrame, 1, CONFIG.BORDER_COLOR, 0.3)
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 0)
+    mainCorner.Parent = mainFrame
+    
+    -- Remove bottom corners
+    local bottomCorner = Instance.new("UICorner")
+    bottomCorner.CornerRadius = UDim.new(0, 0)
+    bottomCorner.Parent = mainFrame
+    
+    -- Remove border from main frame
+    -- local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
+    
+    -- Resize Handle
+    local resizeHandle = CreateElement("Frame", {
+        Name = "ResizeHandle",
+        Size = GetResponsiveUDim2(UDim2.new(0, 20, 0, 20)),
+        Position = UDim2.new(1, -20, 1, -20),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BackgroundTransparency = 0.7,
+        BorderSizePixel = 0,
+        ZIndex = 1000
+    })
+    resizeHandle.Parent = mainFrame
+    AddCorner(resizeHandle, UDim.new(0, GetResponsiveSize(4)))
+    
+    -- Resize handle hover effect
+    local isResizing = false
+    local resizeStartPos = nil
+    local resizeStartSize = nil
+    
+    -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
         Name = "HeaderBar",
-        Size = UDim2.new(1, 0, 0, 60),
+        Size = UDim2.new(1, 0, 0, GetResponsiveSize(56)),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.SECONDARY_COLOR,
         BorderSizePixel = 0
     })
     headerBar.Parent = mainFrame
     
-    -- Header Bar - No UICorner (square appearance)
-    AddStroke(headerBar)
+    -- Round only top corners of header
+    local headerCorner = Instance.new("UICorner")
+    headerCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    headerCorner.Parent = headerBar
     
-    -- Logo Frame
+    -- Cover bottom corners with frame
+    local headerCover = CreateElement("Frame", {
+        Name = "HeaderCover",
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 1, -20),
+        BackgroundColor3 = CONFIG.SECONDARY_COLOR,
+        BorderSizePixel = 0
+    })
+    headerCover.Parent = headerBar
+    
+    -- Divider line under header
+    local headerDivider = CreateElement("Frame", {
+        Name = "HeaderDivider",
+        Size = UDim2.new(1, 0, 0, 1),
+        Position = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = CONFIG.DIVIDER_COLOR,
+        BorderSizePixel = 0
+    })
+    headerDivider.Parent = headerBar
+    
+    -- Enhanced Logo Frame with glow effect
+    local logoSize = GetResponsiveSize(38)
     local logoFrame = CreateElement("Frame", {
         Name = "LogoFrame",
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(0, 20, 0, 10),
+        Size = UDim2.new(0, logoSize, 0, logoSize),
+        Position = UDim2.new(0, GetResponsiveSize(16), 0.5, -logoSize/2),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BorderSizePixel = 0,
         Active = false
     })
     logoFrame.Parent = headerBar
     
-    AddCorner(logoFrame, UDim.new(0, 8))
+    AddCorner(logoFrame, CONFIG.CORNER_RADIUS)
     
-    -- Logo Image
+    -- Logo glow effect
+    local logoGlow = CreateElement("Frame", {
+        Name = "LogoGlow",
+        Size = UDim2.new(1, 12, 1, 12),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 0.8,
+        BorderSizePixel = 0,
+        ZIndex = logoFrame.ZIndex - 1
+    })
+    logoGlow.Parent = logoFrame
+    AddCorner(logoGlow, CONFIG.CORNER_RADIUS_LG)
+    
     local logoImage = CreateElement("ImageLabel", {
         Name = "LogoImage",
-        Size = UDim2.new(1, -4, 1, -4),
-        Position = UDim2.new(0, 2, 0, 2),
+        Size = UDim2.new(1, -8, 1, -8),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
         Image = "rbxassetid://97748628737538",
         ImageTransparency = 0
     })
     logoImage.Parent = logoFrame
     
-    -- Title
+    -- Enhanced Title with better typography
     local titleLabel = CreateElement("TextLabel", {
         Name = "TitleLabel",
-        Size = UDim2.new(1, -120, 0.5, 0),
-        Position = UDim2.new(0, 70, 0, 10),
+        Size = UDim2.new(1, -GetResponsiveSize(160), 0, GetResponsiveSize(20)),
+        Position = UDim2.new(0, GetResponsiveSize(66), 0.5, -GetResponsiveSize(10)),
         BackgroundTransparency = 1,
         Text = windowName,
         TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 20,
-        Font = Enum.Font.GothamBold,
+        TextSize = GetResponsiveFontSize(17),
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     titleLabel.Parent = headerBar
     
+    -- Window control buttons with modern pill design
+    local controlsContainer = CreateElement("Frame", {
+        Name = "ControlsContainer",
+        Size = GetResponsiveUDim2(UDim2.new(0, 80, 0, 32)),
+        Position = UDim2.new(1, -GetResponsiveSize(96), 0.5, -GetResponsiveSize(16)),
+        BackgroundColor3 = CONFIG.PANEL_COLOR,
+        BorderSizePixel = 0
+    })
+    controlsContainer.Parent = headerBar
+    AddCorner(controlsContainer, UDim.new(0, GetResponsiveSize(16)))
+    AddStroke(controlsContainer, 1, CONFIG.BORDER_COLOR, 0.5)
+    
     -- Minimize Button
     local minimizeButton = CreateElement("TextButton", {
         Name = "MinimizeButton",
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(1, -95, 0, 10),
-        BackgroundColor3 = CONFIG.PANEL_COLOR,
+        Size = GetResponsiveUDim2(UDim2.new(0, 32, 0, 24)),
+        Position = UDim2.new(0, GetResponsiveSize(4), 0.5, -GetResponsiveSize(12)),
+        BackgroundColor3 = CONFIG.INPUT_COLOR,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Text = "_",
-        TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 20,
-        Font = Enum.Font.GothamBold
+        Text = "",
+        AutoButtonColor = false
     })
-    minimizeButton.Parent = headerBar
+    minimizeButton.Parent = controlsContainer
+    AddCorner(minimizeButton, UDim.new(0, GetResponsiveSize(8)))
     
-    AddCorner(minimizeButton, UDim.new(0, 8))
+    local minimizeIcon = CreateElement("ImageLabel", {
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0.5, -8, 0.5, -8),
+        BackgroundTransparency = 1,
+        Image = Icons["minimize-2"] or "rbxassetid://116269596042539",
+        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+        ImageTransparency = 0,
+        ScaleType = Enum.ScaleType.Fit
+    })
+    minimizeIcon.Parent = minimizeButton
     
-    -- Enhanced minimize button hover effects
+    -- Close Button with red accent on hover
+    local closeButton = CreateElement("TextButton", {
+        Name = "CloseButton",
+        Size = GetResponsiveUDim2(UDim2.new(0, 32, 0, 24)),
+        Position = UDim2.new(1, -GetResponsiveSize(36), 0.5, -GetResponsiveSize(12)),
+        BackgroundColor3 = CONFIG.INPUT_COLOR,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false
+    })
+    closeButton.Parent = controlsContainer
+    AddCorner(closeButton, UDim.new(0, GetResponsiveSize(8)))
+    
+    local closeIcon = CreateElement("ImageLabel", {
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0.5, -8, 0.5, -8),
+        BackgroundTransparency = 1,
+        Image = Icons["circle-x"] or "rbxassetid://76821953846248",
+        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+        ImageTransparency = 0,
+        ScaleType = Enum.ScaleType.Fit
+    })
+    closeIcon.Parent = closeButton
+    
+    -- Enhanced hover effects for control buttons
     minimizeButton.MouseEnter:Connect(function()
-        CreateTween(minimizeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 42, 0, 42)
+        CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+            BackgroundTransparency = 0
+        }):Play()
+        CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+            ImageColor3 = CONFIG.TEXT_COLOR
         }):Play()
     end)
     
     minimizeButton.MouseLeave:Connect(function()
-        CreateTween(minimizeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 40, 0, 40)
+        CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+            BackgroundTransparency = 1
+        }):Play()
+        CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+            ImageColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
-    -- Close Button
-    local closeButton = CreateElement("TextButton", {
-        Name = "CloseButton",
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(1, -50, 0, 10),
-        BackgroundColor3 = CONFIG.PANEL_COLOR,
-        BorderSizePixel = 0,
-        Text = "X",
-        TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 20,
-        Font = Enum.Font.GothamBold
-    })
-    closeButton.Parent = headerBar
-    
-    AddCorner(closeButton, UDim.new(0, 8))
-    
-    -- Enhanced close button hover effects
     closeButton.MouseEnter:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 42, 0, 42),
-            BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        CreateTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+            BackgroundTransparency = 0
+        }):Play()
+        CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+            ImageColor3 = CONFIG.TEXT_COLOR
         }):Play()
     end)
     
     closeButton.MouseLeave:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 40, 0, 40),
-            BackgroundColor3 = CONFIG.PANEL_COLOR
+        CreateTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+            BackgroundTransparency = 1
+        }):Play()
+        CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+            ImageColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -345,11 +606,10 @@ function VortexUI:CreateWindow(options)
     local isMinimized = false
     local originalSize = mainFrame.Size
     local originalPosition = mainFrame.Position
-    local minimizedSize = UDim2.new(0, 200, 0, 60)  -- Small header with buttons
+    local minimizedSize = GetResponsiveUDim2(UDim2.new(0, 220, 0, 56))
     local originalVisibilities = {}
     local currentTween = nil
     
-    -- Function to keep window within screen bounds
     local function keepInBounds(position, size)
         local viewportSize = workspace.CurrentCamera.ViewportSize
         local x = position.X.Offset + position.X.Scale * viewportSize.X
@@ -357,32 +617,84 @@ function VortexUI:CreateWindow(options)
         local width = size.X.Offset + size.X.Scale * viewportSize.X
         local height = size.Y.Offset + size.Y.Scale * viewportSize.Y
         
-        -- Ensure window stays within screen bounds
         x = math.max(0, math.min(x, viewportSize.X - width))
         y = math.max(0, math.min(y, viewportSize.Y - height))
         
         return UDim2.new(0, x, 0, y)
     end
     
+    -- Content Frame
+    local contentFrame = CreateElement("Frame", {
+        Name = "ContentFrame",
+        Size = UDim2.new(1, 0, 1, -GetResponsiveSize(56)),
+        Position = UDim2.new(0, 0, 0, GetResponsiveSize(56)),
+        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+        BorderSizePixel = 0
+    })
+    contentFrame.Parent = mainFrame
+    
+    -- Enhanced Sidebar with better styling
+    local sidebarWidth = Responsive.CurrentCategory == "Mobile" and GetResponsiveSize(160) or GetResponsiveSize(200)
+    local sidebarFrame = CreateElement("Frame", {
+        Name = "SidebarFrame",
+        Size = UDim2.new(0, sidebarWidth, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = CONFIG.SECONDARY_COLOR,
+        BorderSizePixel = 0
+    })
+    sidebarFrame.Parent = contentFrame
+    
+    -- Sidebar right border
+    local sidebarBorder = CreateElement("Frame", {
+        Name = "SidebarBorder",
+        Size = UDim2.new(0, 1, 1, 0),
+        Position = UDim2.new(1, 0, 0, 0),
+        BackgroundColor3 = CONFIG.DIVIDER_COLOR,
+        BorderSizePixel = 0
+    })
+    sidebarBorder.Parent = sidebarFrame
+    
+    -- Sidebar padding
+    local sidebarPadding = CreateElement("UIPadding", {
+        PaddingTop = UDim.new(0, GetResponsiveSize(12)),
+        PaddingLeft = UDim.new(0, GetResponsiveSize(12)),
+        PaddingRight = UDim.new(0, GetResponsiveSize(12)),
+        PaddingBottom = UDim.new(0, GetResponsiveSize(12))
+    })
+    sidebarPadding.Parent = sidebarFrame
+    
+    -- Enhanced Content Area with better scrollbar
+    local contentArea = CreateElement("ScrollingFrame", {
+        Name = "ContentArea",
+        Size = UDim2.new(1, -sidebarWidth, 1, 0),
+        Position = UDim2.new(0, sidebarWidth, 0, 0),
+        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+        BorderSizePixel = 0,
+        ScrollBarThickness = GetResponsiveSize(4),
+        ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
+        ScrollBarImageTransparency = 0.3,
+        TopImage = "rbxassetid://6015897843",
+        MidImage = "rbxassetid://6015897843",
+        BottomImage = "rbxassetid://6015897843"
+    })
+    contentArea.Parent = contentFrame
+    contentArea.ClipsDescendants = true
+    
     local function updateMinimizedState()
-        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
         
         if isMinimized then
-            -- Save current position before minimizing
             originalPosition = mainFrame.Position
-            
-            -- Store original visibility states (but ensure header stays visible)
             originalVisibilities = {}
+            
             for _, child in ipairs(mainFrame:GetChildren()) do
                 if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     originalVisibilities[child] = child.Visible
                 end
             end
             
-            -- Calculate minimized position and keep in bounds
             local minimizedPos = keepInBounds(mainFrame.Position, minimizedSize)
             
-            -- Cancel previous tween if exists
             if currentTween then currentTween:Cancel() end
             currentTween = TweenService:Create(mainFrame, tweenInfo, {
                 Size = minimizedSize,
@@ -390,20 +702,24 @@ function VortexUI:CreateWindow(options)
             })
             currentTween:Play()
             
-            -- Hide all children except header
+            -- Animate background frame for minimized state
+            local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
+                Size = GetResponsiveUDim2(UDim2.new(0, 230, 0, 66)),
+                Position = UDim2.new(minimizedPos.X.Scale, minimizedPos.X.Offset - GetResponsiveSize(5), minimizedPos.Y.Scale, minimizedPos.Y.Offset - GetResponsiveSize(5))
+            })
+            backgroundTween:Play()
+            
             for _, child in ipairs(mainFrame:GetChildren()) do
                 if child ~= headerBar and child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     child.Visible = false
                 end
             end
             
-            -- Ensure header is visible
             headerBar.Visible = true
             
-            -- Keep logo, minimize button, close button, and title visible, hide other header children
             for _, child in ipairs(headerBar:GetChildren()) do
                 if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
-                    if child ~= logoFrame and child ~= minimizeButton and child ~= closeButton and child ~= titleLabel then
+                    if child ~= logoFrame and child ~= controlsContainer and child ~= titleLabel and child.Name ~= "HeaderCover" and child.Name ~= "HeaderDivider" then
                         child.Visible = false
                     else
                         child.Visible = true
@@ -411,30 +727,18 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
-            -- Ensure content area is hidden (in case it's not a direct child)
-            if contentArea then
-                contentArea.Visible = false
-            end
-            if sidebarFrame then
-                sidebarFrame.Visible = false
-            end
+            if contentArea then contentArea.Visible = false end
+            if sidebarFrame then sidebarFrame.Visible = false end
+            if resizeHandle then resizeHandle.Visible = false end
             
-            -- Resize header to fill minimized window
             headerBar.Size = UDim2.new(1, 0, 1, 0)
-            logoFrame.AnchorPoint = Vector2.new(0, 0)
-            logoFrame.Position = UDim2.new(0, 10, 0, 10)  -- Position logo on the left
-            
-            -- Adjust title for minimized header
             titleLabel.Visible = false
             
-            -- Adjust button positions for minimized header
-            minimizeButton.Position = UDim2.new(1, -95, 0, 10)
-            closeButton.Position = UDim2.new(1, -50, 0, 10)
+            -- Update icon to expand when minimized
+            minimizeIcon.Image = Icons["expand"] or "rbxassetid://137492887754537"
         else
-            -- Ensure restored position is within bounds
             local restoredPos = keepInBounds(originalPosition, originalSize)
             
-            -- Cancel previous tween if exists
             if currentTween then currentTween:Cancel() end
             currentTween = TweenService:Create(mainFrame, tweenInfo, {
                 Size = originalSize,
@@ -442,86 +746,39 @@ function VortexUI:CreateWindow(options)
             })
             currentTween:Play()
             
-            -- Restore original visibility states
+            -- Animate background frame for restored state
+            local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
+                Size = UDim2.new(0, originalSize.X.Offset + backgroundOffset, 0, originalSize.Y.Offset + backgroundOffset),
+                Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - GetResponsiveSize(5), restoredPos.Y.Scale, restoredPos.Y.Offset - GetResponsiveSize(5))
+            })
+            backgroundTween:Play()
+            
             for child, wasVisible in pairs(originalVisibilities) do
-                if child.Parent then  -- make sure it wasn't destroyed
+                if child.Parent then
                     child.Visible = wasVisible
                 end
             end
             
-            -- Ensure title is always visible when restored
-            titleLabel.Visible = true
+            -- Explicitly restore main content areas
+            if contentArea then contentArea.Visible = true end
+            if sidebarFrame then sidebarFrame.Visible = true end
+            if titleLabel then titleLabel.Visible = true end
+            if resizeHandle then resizeHandle.Visible = true end
             
-            -- Restore header
-            headerBar.Size = UDim2.new(1, 0, 0, 60)
-            logoFrame.AnchorPoint = Vector2.new(0, 0)
-            logoFrame.Position = UDim2.new(0, 20, 0, 10)
-            
-            -- Restore title position and size
-            titleLabel.Size = UDim2.new(1, -120, 0.5, 0)
-            titleLabel.Position = UDim2.new(0, 70, 0, 10)
-            
-            -- Restore button positions
-            minimizeButton.Position = UDim2.new(1, -95, 0, 10)
-            closeButton.Position = UDim2.new(1, -50, 0, 10)
-            
-            -- Update original position to the actual restored position
+            headerBar.Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
             originalPosition = restoredPos
+            
+            -- Update icon to minimize-2 when restored
+            minimizeIcon.Image = Icons["minimize-2"] or "rbxassetid://116269596042539"
         end
     end
     
-    -- Toggle minimize/maximize when minimize button is clicked
     minimizeButton.MouseButton1Click:Connect(function()
         isMinimized = not isMinimized
         updateMinimizedState()
     end)
     
-    -- Content Frame
-    local contentFrame = CreateElement("Frame", {
-        Name = "ContentFrame",
-        Size = UDim2.new(1, 0, 1, -60),
-        Position = UDim2.new(0, 0, 0, 60),
-        BackgroundColor3 = CONFIG.SECONDARY_COLOR,
-        BorderSizePixel = 0
-    })
-    contentFrame.Parent = mainFrame
-    
-    -- Content Frame - No UICorner (square appearance)
-    AddStroke(contentFrame)
-    
-    -- Sidebar
-    local sidebarFrame = CreateElement("Frame", {
-        Name = "SidebarFrame",
-        Size = UDim2.new(0, 220, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = CONFIG.SECONDARY_COLOR,
-        BorderSizePixel = 0
-    })
-    sidebarFrame.Parent = contentFrame
-    
-    -- Sidebar - No UICorner (square appearance)
-    AddStroke(sidebarFrame)
-    
-    -- Content Area
-    local contentArea = CreateElement("ScrollingFrame", {
-        Name = "ContentArea",
-        Size = UDim2.new(1, -220, 1, 0),
-        Position = UDim2.new(0, 220, 0, 0),
-        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 6,
-        ScrollBarImageColor3 = CONFIG.BORDER_COLOR,
-        ScrollBarImageTransparency = 0.3
-    })
-    contentArea.Parent = contentFrame
-
-    contentArea.ClipsDescendants = true
-    
-    -- Content Area - No UICorner (square appearance)
-    AddStroke(contentArea)
-    
-    -- Make draggable
-    local UserInputService = game:GetService("UserInputService")
+    -- Dragging
     local dragging
     local dragInput
     local dragStart
@@ -530,10 +787,19 @@ function VortexUI:CreateWindow(options)
     local function update(input)
         local delta = input.Position - dragStart
         local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        
-        -- Apply boundary checking
         local boundedPosition = keepInBounds(newPosition, isMinimized and minimizedSize or mainFrame.Size)
         mainFrame.Position = boundedPosition
+        
+        -- Move background frame along with main frame
+        local backgroundOffset = GetResponsiveSize(5) -- Responsive offset
+        backgroundFrame.Position = UDim2.new(
+            boundedPosition.X.Scale, 
+            boundedPosition.X.Offset - backgroundOffset, 
+            boundedPosition.Y.Scale, 
+            boundedPosition.Y.Offset - backgroundOffset
+        )
+        -- Update background frame size to match main frame
+        backgroundFrame.Size = UDim2.new(0, (isMinimized and minimizedSize or mainFrame.Size).X.Offset + backgroundOffset, 0, (isMinimized and minimizedSize or mainFrame.Size).Y.Offset + backgroundOffset)
     end
     
     local function handleDragStart(input)
@@ -545,7 +811,6 @@ function VortexUI:CreateWindow(options)
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
-                    -- Update original position when drag ends (if not minimized)
                     if not isMinimized then
                         originalPosition = mainFrame.Position
                     end
@@ -560,7 +825,6 @@ function VortexUI:CreateWindow(options)
         end
     end
     
-    -- Make both header bar and logo draggable when minimized
     local function setupDrag(element)
         element.InputBegan:Connect(handleDragStart)
         element.InputChanged:Connect(handleInputChanged)
@@ -568,6 +832,96 @@ function VortexUI:CreateWindow(options)
     
     setupDrag(headerBar)
     setupDrag(logoFrame)
+    
+    -- Resize functionality
+    local function handleResizeStart(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isResizing = true
+            resizeStartPos = input.Position
+            resizeStartSize = mainFrame.Size
+            
+            -- Visual feedback
+            CreateTween(resizeHandle, TweenInfo.new(0.1), {
+                BackgroundTransparency = 0.3
+            }):Play()
+        end
+    end
+    
+    local function handleResizeChanged(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and isResizing then
+            local delta = input.Position - resizeStartPos
+            local newSize = UDim2.new(
+                resizeStartSize.X.Scale,
+                math.max(GetResponsiveSize(300), resizeStartSize.X.Offset + delta.X),
+                resizeStartSize.Y.Scale,
+                math.max(GetResponsiveSize(200), resizeStartSize.Y.Offset + delta.Y)
+            )
+            
+            -- Apply new size with bounds checking
+            local viewportSize = workspace.CurrentCamera.ViewportSize
+            local maxX = viewportSize.X - newSize.X.Offset
+            local maxY = viewportSize.Y - newSize.Y.Offset
+            
+            local boundedSize = UDim2.new(
+                newSize.X.Scale,
+                math.min(newSize.X.Offset, maxX),
+                newSize.Y.Scale,
+                math.min(newSize.Y.Offset, maxY)
+            )
+            
+            mainFrame.Size = boundedSize
+            
+            -- Update background frame to always match main frame
+            if backgroundFrame then
+                backgroundFrame.Size = UDim2.new(0, mainFrame.Size.X.Offset + backgroundOffset, 0, mainFrame.Size.Y.Offset + backgroundOffset)
+                backgroundFrame.Position = UDim2.new(0.5, -(mainFrame.Size.X.Offset + backgroundOffset)/2, 0.5, -(mainFrame.Size.Y.Offset + backgroundOffset)/2)
+            end
+            
+            -- Update resize handle position to stay in corner
+            resizeHandle.Position = UDim2.new(1, -20, 1, -20)
+        end
+    end
+    
+    local function handleResizeEnd(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isResizing = false
+            resizeStartPos = nil
+            resizeStartSize = nil
+            
+            -- Restore visual feedback
+            CreateTween(resizeHandle, TweenInfo.new(0.1), {
+                BackgroundTransparency = 0.7
+            }):Play()
+            
+            if not isMinimized then
+                originalSize = mainFrame.Size
+                originalPosition = mainFrame.Position
+            end
+        end
+    end
+    
+    local function setupResize(element)
+        element.InputBegan:Connect(handleResizeStart)
+        element.InputChanged:Connect(handleResizeChanged)
+        element.InputEnded:Connect(handleResizeEnd)
+    end
+    
+    setupResize(resizeHandle)
+    
+    -- Resize handle hover effect
+    resizeHandle.MouseEnter:Connect(function()
+        CreateTween(resizeHandle, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0.4
+        }):Play()
+    end)
+    
+    resizeHandle.MouseLeave:Connect(function()
+        if not isResizing then
+            CreateTween(resizeHandle, TweenInfo.new(0.15), {
+                BackgroundTransparency = 0.7
+            }):Play()
+        end
+    end)
     
     local dragConnection = UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
@@ -582,11 +936,9 @@ function VortexUI:CreateWindow(options)
         screenGui:Destroy()
     end)
     
-    -- Add destruction detection for main window
-    local windowName = "VortexUI"
+    local windowNameVar = "VortexUI"
     local cleanupCalled = false
     
-    -- Monitor for UI destruction
     local destructionConnection
     destructionConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if not screenGui or not screenGui.Parent then
@@ -600,10 +952,9 @@ function VortexUI:CreateWindow(options)
         end
     end)
     
-    -- Also monitor for CoreGui children removal
     local coreGuiConnection
     coreGuiConnection = CoreGui.ChildRemoved:Connect(function(child)
-        if child.Name == windowName then
+        if child.Name == windowNameVar then
             if not cleanupCalled then
                 cleanupCalled = true
                 if destructionConnection then
@@ -617,11 +968,59 @@ function VortexUI:CreateWindow(options)
         end
     end)
     
-    -- Track these connections for cleanup
     TrackConnection(destructionConnection, window)
     TrackConnection(coreGuiConnection, window)
     
-    -- Store window instance
+    -- Screen size change detection for responsive updates
+    local viewportSizeConnection = workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+        local oldCategory = Responsive.CurrentCategory
+        UpdateResponsiveScale()
+        
+        if oldCategory ~= Responsive.CurrentCategory then
+            -- Update window size and position for new screen category
+            local newWindowSize = GetResponsiveUDim2(baseWindowSize)
+            local newWindowPos = UDim2.new(0.5, -newWindowSize.X.Offset/2, 0.5, -newWindowSize.Y.Offset/2)
+            
+            -- Animate window size change
+            CreateTween(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = newWindowSize,
+                Position = newWindowPos
+            }):Play()
+            
+            -- Update background frame
+            local newBackgroundOffset = GetResponsiveSize(10)
+            CreateTween(backgroundFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(0, newWindowSize.X.Offset + newBackgroundOffset, 0, newWindowSize.Y.Offset + newBackgroundOffset),
+                Position = UDim2.new(0.5, -(newWindowSize.X.Offset + newBackgroundOffset)/2, 0.5, -(newWindowSize.Y.Offset + newBackgroundOffset)/2)
+            }):Play()
+            
+            -- Update sidebar width
+            local newSidebarWidth = Responsive.CurrentCategory == "Mobile" and GetResponsiveSize(160) or GetResponsiveSize(200)
+            CreateTween(sidebarFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(0, newSidebarWidth, 1, 0)
+            }):Play()
+            
+            -- Update content area
+            CreateTween(contentArea, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, -newSidebarWidth, 1, 0),
+                Position = UDim2.new(0, newSidebarWidth, 0, 0)
+            }):Play()
+            
+            -- Update header bar height
+            CreateTween(headerBar, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
+            }):Play()
+            
+            -- Update content frame
+            CreateTween(contentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, 0, 1, -GetResponsiveSize(56)),
+                Position = UDim2.new(0, 0, 0, GetResponsiveSize(56))
+            }):Play()
+        end
+    end)
+    
+    TrackConnection(viewportSizeConnection, window)
+    
     WindowInstances[window] = {
         ScreenGui = screenGui,
         MainFrame = mainFrame,
@@ -632,194 +1031,227 @@ function VortexUI:CreateWindow(options)
     }
     
     -- Window methods
+    -- =============================================================================
+    -- TAB SYSTEM
+    -- =============================================================================
+    
     function window:CreateTab(options)
         local tabName = options.Name or "New Tab"
         local iconName = options.Icon
         local tab = {}
         
-        -- Create tab button in sidebar
         local tabCount = 0
         for _ in pairs(WindowInstances[window].Tabs) do
             tabCount = tabCount + 1
         end
         
+        -- Enhanced Tab Button with modern styling
         local tabButton = CreateElement("TextButton", {
             Name = "TabButton_" .. tabName,
-            Size = UDim2.new(1, -20, 0, 48),
-            Position = UDim2.new(0, 10, 0, 10 + (tabCount * 56)),
+            Size = UDim2.new(1, 0, 0, GetResponsiveSize(44)),
+            Position = UDim2.new(0, 0, 0, tabCount * GetResponsiveSize(52)),
             BackgroundColor3 = CONFIG.SECONDARY_COLOR,
+            BackgroundTransparency = 1,
             BorderSizePixel = 0,
             Text = "",
-            TextColor3 = CONFIG.TEXT_COLOR,
-            TextSize = 14,
-            Font = Enum.Font.GothamSemibold,
+            AutoButtonColor = false,
             ZIndex = 10
         })
         tabButton.Parent = sidebarFrame
         
-        -- Tab Button - No UICorner (square appearance)
-        AddStroke(tabButton)
+        AddCorner(tabButton, CONFIG.CORNER_RADIUS)
         
-        -- Enhanced tab button hover effects
-        tabButton.MouseEnter:Connect(function()
-            if tabButton.BackgroundColor3 ~= CONFIG.PANEL_COLOR then
-                CreateTween(tabButton, TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = CONFIG.PANEL_COLOR
-                }):Play()
-            end
-        end)
+        -- Tab Icon container
+        local tabIconContainer = CreateElement("Frame", {
+            Name = "IconContainer",
+            Size = GetResponsiveUDim2(UDim2.new(0, 32, 0, 32)),
+            Position = UDim2.new(0, GetResponsiveSize(8), 0.5, -GetResponsiveSize(16)),
+            BackgroundColor3 = CONFIG.PANEL_COLOR,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0
+        })
+        tabIconContainer.Parent = tabButton
+        AddCorner(tabIconContainer, CONFIG.CORNER_RADIUS_SM)
         
-        tabButton.MouseLeave:Connect(function()
-            if tabButton.BackgroundColor3 == CONFIG.PANEL_COLOR and not accentIndicator.Visible then
-                CreateTween(tabButton, TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = CONFIG.SECONDARY_COLOR
-                }):Play()
-            end
-        end)
-        
-        -- Tab label
         local tabLabel = CreateElement("TextLabel", {
             Name = "TabLabel",
-            Size = UDim2.new(1, -50, 1, 0),
-            Position = UDim2.new(0, 50, 0, 0),
+            Size = UDim2.new(1, -GetResponsiveSize(56), 1, 0),
+            Position = UDim2.new(0, GetResponsiveSize(48), 0, 0),
             BackgroundTransparency = 1,
             Text = tabName,
-            TextColor3 = CONFIG.TEXT_COLOR,
-            TextSize = 14,
-            Font = Enum.Font.GothamSemibold,
+            TextColor3 = CONFIG.SUB_TEXT_COLOR,
+            TextSize = GetResponsiveFontSize(14),
+            Font = Enum.Font.Montserrat,
             TextXAlignment = Enum.TextXAlignment.Left
         })
         tabLabel.Parent = tabButton
         
-        -- Icon (optional)
         local tabIcon = nil
         if iconName and Icons[iconName] then
             tabIcon = CreateElement("ImageLabel", {
                 Name = "TabIcon",
-                Size = UDim2.new(0, 20, 0, 20),
-                Position = UDim2.new(0, 15, 0.5, -10),
+                Size = GetResponsiveUDim2(UDim2.new(0, 18, 0, 18)),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundTransparency = 1,
                 Image = Icons[iconName],
-                ImageTransparency = 0,
-                ImageColor3 = CONFIG.TEXT_COLOR
+                ImageColor3 = CONFIG.SUB_TEXT_COLOR
             })
-            tabIcon.Parent = tabButton
-            
-            -- Adjust tab label position when icon is present
-            tabLabel.Position = UDim2.new(0, 45, 0, 0)
-            tabLabel.Size = UDim2.new(1, -70, 1, 0)
+            tabIcon.Parent = tabIconContainer
         end
         
-        -- Accent indicator
+        -- Modern accent indicator (left bar)
         local accentIndicator = CreateElement("Frame", {
             Name = "AccentIndicator",
-            Size = UDim2.new(0, 4, 1, 0),
+            Size = UDim2.new(0, 3, 1, 0),
             Position = UDim2.new(0, 0, 0, 0),
             BackgroundColor3 = CONFIG.ACCENT_COLOR,
             BorderSizePixel = 0,
             Visible = false
         })
         accentIndicator.Parent = tabButton
+        AddCorner(accentIndicator, UDim.new(0, 2))
         
-        -- Content container for this tab
+        -- Enhanced tab hover effects
+        tabButton.MouseEnter:Connect(function()
+            if not accentIndicator.Visible then
+                CreateTween(tabButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                    BackgroundTransparency = 0.5
+                }):Play()
+                CreateTween(tabLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                    TextColor3 = CONFIG.TEXT_COLOR
+                }):Play()
+                if tabIcon then
+                    CreateTween(tabIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                        ImageColor3 = CONFIG.TEXT_COLOR
+                    }):Play()
+                end
+            end
+        end)
+        
+        tabButton.MouseLeave:Connect(function()
+            if not accentIndicator.Visible then
+                CreateTween(tabButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                    BackgroundTransparency = 1
+                }):Play()
+                CreateTween(tabLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                    TextColor3 = CONFIG.SUB_TEXT_COLOR
+                }):Play()
+                if tabIcon then
+                    CreateTween(tabIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                        ImageColor3 = CONFIG.SUB_TEXT_COLOR
+                    }):Play()
+                end
+            end
+        end)
+        
         local tabContent = CreateElement("Frame", {
             Name = "TabContent_" .. tabName,
-            Size = UDim2.new(1, -40, 1, -40),
-            Position = UDim2.new(0, 20, 0, 20),
+            Size = UDim2.new(1, -GetResponsiveSize(48), 1, -GetResponsiveSize(48)),
+            Position = UDim2.new(0, GetResponsiveSize(24), 0, GetResponsiveSize(24)),
             BackgroundColor3 = CONFIG.PRIMARY_COLOR,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
         })
         tabContent.Parent = contentArea
-
         tabContent.ClipsDescendants = true
+        
+        local function updateCanvasSize()
+            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
+            if layout then
+                local absoluteContentSize = layout.AbsoluteContentSize
+                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + GetResponsiveSize(48))
+            end
+        end
         
         -- Tab click handler
         tabButton.MouseButton1Click:Connect(function()
-            -- Store the current tab as the last used tab for this window
             if not WindowInstances[window].LastUsedTab then
                 WindowInstances[window].LastUsedTab = {}
             end
             WindowInstances[window].LastUsedTab[windowName or "default"] = tabContent
             
-            -- Hide all other tabs with faster animations
             for _, otherTab in pairs(WindowInstances[window].Tabs) do
                 if otherTab.Content ~= tabContent then
-                    -- Faster fade out with scale effect
-                    CreateTween(otherTab.Content, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-                        BackgroundTransparency = 1,
-                        Size = UDim2.new(1, -40, 1, -40)
+                    CreateTween(otherTab.Content, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                        BackgroundTransparency = 1
                     }):Play()
                     
-                    -- Faster button color transition
-                    CreateTween(otherTab.Button, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                        BackgroundColor3 = CONFIG.SECONDARY_COLOR
+                    CreateTween(otherTab.Button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                        BackgroundTransparency = 1
                     }):Play()
                     
-                    -- Faster accent indicator slide out
-                    CreateTween(otherTab.AccentIndicator, TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-                        Position = UDim2.new(0, -4, 0, 0),
+                    -- Reset text and icon colors
+                    local otherLabel = otherTab.Button:FindFirstChild("TabLabel")
+                    if otherLabel then
+                        CreateTween(otherLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                            TextColor3 = CONFIG.SUB_TEXT_COLOR
+                        }):Play()
+                    end
+                    
+                    local otherIconContainer = otherTab.Button:FindFirstChild("IconContainer")
+                    if otherIconContainer then
+                        local otherIcon = otherIconContainer:FindFirstChild("TabIcon")
+                        if otherIcon then
+                            CreateTween(otherIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                                ImageColor3 = CONFIG.SUB_TEXT_COLOR
+                            }):Play()
+                        end
+                    end
+                    
+                    CreateTween(otherTab.AccentIndicator, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                        Size = UDim2.new(0, 3, 1, 0),
                         BackgroundTransparency = 1
                     }):Play()
                     
                     otherTab.Content.Visible = false
                     otherTab.AccentIndicator.Visible = false
-                    otherTab.AccentIndicator.Position = UDim2.new(0, 0, 0, 0)
+                    otherTab.AccentIndicator.Size = UDim2.new(0, 3, 1, 0)
                     otherTab.AccentIndicator.BackgroundTransparency = 0
-                    -- Restore size
-                    otherTab.Content.Size = UDim2.new(1, -40, 1, -40)
                 end
             end
             
-            -- Show this tab with faster animations
             tabContent.Visible = true
-            tabContent.BackgroundColor3 = CONFIG.PRIMARY_COLOR
             tabContent.BackgroundTransparency = 1
-            tabContent.Size = UDim2.new(1, -40, 1, -40)
             
-            -- Faster fade in with scale effect
-            CreateTween(tabContent, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            CreateTween(tabContent, TweenInfo.new(CONFIG.TRANSITION_TIME, Enum.EasingStyle.Quart), {
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Faster button color transition
-            CreateTween(tabButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                BackgroundColor3 = CONFIG.PANEL_COLOR
+            CreateTween(tabButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                BackgroundTransparency = 0.7
             }):Play()
             
-            -- Enhanced accent indicator slide in with bounce
+            -- Active state colors
+            CreateTween(tabLabel, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                TextColor3 = CONFIG.TEXT_COLOR
+            }):Play()
+            
+            if tabIcon then
+                CreateTween(tabIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+                    ImageColor3 = CONFIG.ACCENT_COLOR
+                }):Play()
+            end
+            
             accentIndicator.Visible = true
-            accentIndicator.Position = UDim2.new(0, -4, 0, 0)
+            accentIndicator.Size = UDim2.new(0, 3, 1, 0)
             accentIndicator.BackgroundTransparency = 1
-            CreateTween(accentIndicator, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 0, 0, 0),
+            CreateTween(accentIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 3, 1, 0),
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Enhanced canvas size update with smooth animation
             updateCanvasSize()
         end)
         
-        -- Add layout to tab content
         local tabLayout = CreateElement("UIListLayout", {
             SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 10)
+            Padding = UDim.new(0, GetResponsiveSize(12))
         })
         tabLayout.Parent = tabContent
         
-        -- Function to update canvas size based on content
-        local function updateCanvasSize()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
-        end
-        
-        -- Auto-update canvas size when content changes
         tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
         
-        -- Store tab info
         WindowInstances[window].Tabs[tabName] = {
             Button = tabButton,
             Content = tabContent,
@@ -828,65 +1260,77 @@ function VortexUI:CreateWindow(options)
             Elements = {}
         }
         
-        -- Tab methods
+        -- =============================================================================
+        -- UI ELEMENTS - BASIC CONTROLS
+        -- =============================================================================
+        
+        -- Enhanced Button with modern styling
         function tab:CreateButton(options)
             local buttonName = options.Name or "Button"
             local callback = options.Callback or function() end
             
             local button = CreateElement("TextButton", {
                 Name = buttonName,
-                Size = UDim2.new(0, 160, 0, 40),
+                Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42)),
                 BackgroundColor3 = CONFIG.ACCENT_COLOR,
                 BorderSizePixel = 0,
                 Text = buttonName,
                 TextColor3 = Color3.new(1, 1, 1),
-                TextSize = 14,
-                Font = Enum.Font.GothamSemibold
+                TextSize = GetResponsiveFontSize(14),
+                Font = Enum.Font.Montserrat,
+                AutoButtonColor = false
             })
             button.Parent = tabContent
             
-            AddCorner(button)
-            AddStroke(button)
+            AddCorner(button, CONFIG.CORNER_RADIUS)
             
-            -- Fade-in animation for button
+            -- Subtle inner shadow/depth
+            local buttonGradient = AddGradient(button, 
+                Color3.fromRGB(
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.R * 255 + 15)),
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.G * 255 + 15)),
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.B * 255 + 15))
+                ),
+                CONFIG.ACCENT_COLOR, 
+                180
+            )
+            
             button.BackgroundTransparency = 1
-            CreateTween(button, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            CreateTween(button, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Enhanced hover effects with smooth transitions and scale
             button.MouseEnter:Connect(function()
-                CreateTween(button, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = CONFIG.ACCENT_HOVER
-                }):Play()
-                CreateTween(button, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 165, 0, 40)
+                CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                    BackgroundColor3 = CONFIG.ACCENT_HOVER,
+                    Size = GetResponsiveUDim2(UDim2.new(0, 184, 0, 42))
                 }):Play()
             end)
             
             button.MouseLeave:Connect(function()
-                CreateTween(button, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = CONFIG.ACCENT_COLOR
-                }):Play()
-                CreateTween(button, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 160, 0, 40)
+                CreateTween(button, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+                    BackgroundColor3 = CONFIG.ACCENT_COLOR,
+                    Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42))
                 }):Play()
             end)
             
-            button.MouseButton1Click:Connect(callback)
+            -- Click ripple effect
+            button.MouseButton1Click:Connect(function()
+                CreateTween(button, TweenInfo.new(0.1), {
+                    Size = GetResponsiveUDim2(UDim2.new(0, 176, 0, 40))
+                }):Play()
+                task.wait(0.1)
+                CreateTween(button, TweenInfo.new(0.15, Enum.EasingStyle.Back), {
+                    Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42))
+                }):Play()
+                callback()
+            end)
             
-            -- Store element
             WindowInstances[window].Tabs[tabName].Elements[buttonName] = button
             
-            -- Update canvas size to accommodate new button
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
-            -- Return element with methods
             local element = {}
             function element:Set(newName)
                 button.Text = newName
@@ -894,76 +1338,60 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
+        -- =============================================================================
+        -- UI ELEMENTS - DISPLAY & LAYOUT
+        -- =============================================================================
+        
         function tab:CreateSection(title)
             local sectionFrame = CreateElement("Frame", {
                 Name = "Section_" .. (title or ""),
-                Size = UDim2.new(1, -40, 0, 40),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(36)),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0
             })
             sectionFrame.Parent = tabContent
             
-            -- Left line
             local leftLine = CreateElement("Frame", {
                 Name = "LeftLine",
-                Size = UDim2.new(0.5, -60, 0, 1),
+                Size = UDim2.new(0.3, -GetResponsiveSize(10), 0, 1),
                 Position = UDim2.new(0, 0, 0.5, 0),
-                BackgroundColor3 = CONFIG.BORDER_COLOR,
+                BackgroundColor3 = CONFIG.DIVIDER_COLOR,
                 BorderSizePixel = 0
             })
             leftLine.Parent = sectionFrame
             
-            -- Title label
             local titleLabel = CreateElement("TextLabel", {
                 Name = "Title",
-                Size = UDim2.new(0, 100, 1, 0),
-                Position = UDim2.new(0.5, -50, 0, 0),
+                Size = UDim2.new(0.4, 0, 1, 0),
+                Position = UDim2.new(0.3, 0, 0, 0),
                 BackgroundTransparency = 1,
                 Text = title or "",
-                TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
-                Font = Enum.Font.GothamSemibold,
+                TextColor3 = CONFIG.MUTED_COLOR,
+                TextSize = GetResponsiveFontSize(12),
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Center,
                 TextYAlignment = Enum.TextYAlignment.Center
             })
             titleLabel.Parent = sectionFrame
             
-            -- Right line
             local rightLine = CreateElement("Frame", {
                 Name = "RightLine",
-                Size = UDim2.new(0.5, -60, 0, 1),
-                Position = UDim2.new(0.5, 60, 0.5, 0),
-                BackgroundColor3 = CONFIG.BORDER_COLOR,
+                Size = UDim2.new(0.3, -GetResponsiveSize(10), 0, 1),
+                Position = UDim2.new(0.7, GetResponsiveSize(10), 0.5, 0),
+                BackgroundColor3 = CONFIG.DIVIDER_COLOR,
                 BorderSizePixel = 0
             })
             rightLine.Parent = sectionFrame
             
-            -- Return element with methods
             local element = {}
-            
             function element:Set(newTitle)
                 if newTitle then
                     titleLabel.Text = newTitle
-                    -- Adjust line positions based on new text width
-                    local textWidth = math.min(100, titleLabel.TextBounds.X + 20)
-                    leftLine.Size = UDim2.new(0.5, -textWidth/2 - 10, 0, 1)
-                    rightLine.Position = UDim2.new(0.5, textWidth/2 + 10, 0.5, 0)
-                    rightLine.Size = UDim2.new(0.5, -textWidth/2 - 10, 0, 1)
-                    titleLabel.Size = UDim2.new(0, textWidth, 1, 0)
-                    titleLabel.Position = UDim2.new(0.5, -textWidth/2, 0, 0)
                 end
             end
             
-            -- Initial setup
-            element:Set(title)
-            
-            -- Update canvas size to accommodate new section
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
             return element
         end
@@ -974,20 +1402,18 @@ function VortexUI:CreateWindow(options)
             
             local label = CreateElement("TextLabel", {
                 Name = "Label_" .. labelText,
-                Size = UDim2.new(1, -40, 0, 24),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(24)),
                 BackgroundTransparency = 1,
                 Text = labelText,
                 TextColor3 = textColor,
-                TextSize = 14,
-                Font = Enum.Font.GothamSemibold,
+                TextSize = GetResponsiveFontSize(14),
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Center
             })
             label.Parent = tabContent
             
-            -- Return element with methods
             local element = {}
-            
             function element:Set(newText, newColor, newIgnoreTheme)
                 if newText then label.Text = newText end
                 if newColor ~= nil then 
@@ -997,13 +1423,8 @@ function VortexUI:CreateWindow(options)
                 end
             end
             
-            -- Update canvas size to accommodate new label
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
             return element
         end
@@ -1015,84 +1436,78 @@ function VortexUI:CreateWindow(options)
             
             local paragraphFrame = CreateElement("Frame", {
                 Name = "ParagraphFrame",
-                Size = UDim2.new(1, -40, 0, 0), -- Height will be set based on content
-                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 0),
+                BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
             paragraphFrame.Parent = tabContent
+            AddCorner(paragraphFrame, CONFIG.CORNER_RADIUS)
             
-            -- Title label
+            local paragraphPadding = CreateElement("UIPadding", {
+                PaddingTop = UDim.new(0, GetResponsiveSize(14)),
+                PaddingBottom = UDim.new(0, GetResponsiveSize(14)),
+                PaddingLeft = UDim.new(0, GetResponsiveSize(16)),
+                PaddingRight = UDim.new(0, GetResponsiveSize(16))
+            })
+            paragraphPadding.Parent = paragraphFrame
+            
             local titleLabel = CreateElement("TextLabel", {
                 Name = "Title",
-                Size = UDim2.new(1, 0, 0, 20),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(20)),
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 Text = title,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 16,
-                Font = Enum.Font.GothamSemibold,
+                TextSize = GetResponsiveFontSize(15),
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             titleLabel.Parent = paragraphFrame
             
-            -- Content label
             local contentLabel = CreateElement("TextLabel", {
                 Name = "Content",
-                Size = UDim2.new(1, 0, 0, 0), -- Height will be set by TextBounds
-                Position = UDim2.new(0, 0, 0, 25),
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 0, GetResponsiveSize(26)),
                 BackgroundTransparency = 1,
                 Text = content,
                 TextColor3 = CONFIG.SUB_TEXT_COLOR,
-                TextSize = 14,
-                Font = Enum.Font.Gotham,
+                TextSize = GetResponsiveFontSize(13),
+                Font = Enum.Font.Montserrat,
                 TextWrapped = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Top
             })
             contentLabel.Parent = paragraphFrame
             
-            -- Update size based on content
             local function updateSize()
                 local contentSize = contentLabel.TextBounds
                 contentLabel.Size = UDim2.new(1, 0, 0, contentSize.Y)
-                paragraphFrame.Size = UDim2.new(1, -40, 0, contentSize.Y + 25) -- 25 = title height + spacing
+                paragraphFrame.Size = UDim2.new(1, 0, 0, contentSize.Y + GetResponsiveSize(54))
             end
             
-            -- Connect size updates
             contentLabel:GetPropertyChangedSignal("Text"):Connect(updateSize)
             contentLabel:GetPropertyChangedSignal("TextSize"):Connect(updateSize)
-            contentLabel:GetPropertyChangedSignal("Size"):Connect(updateSize)
             updateSize()
             
-            -- Return element with methods
             local element = {}
-            
             function element:Set(data)
-                if data.Title ~= nil then
-                    titleLabel.Text = data.Title
-                end
-                if data.Content ~= nil then
-                    contentLabel.Text = data.Content
-                end
-                if data.TitleColor ~= nil then
-                    titleLabel.TextColor3 = data.TitleColor
-                end
-                if data.ContentColor ~= nil then
-                    contentLabel.TextColor3 = data.ContentColor
-                end
+                if data.Title ~= nil then titleLabel.Text = data.Title end
+                if data.Content ~= nil then contentLabel.Text = data.Content end
+                if data.TitleColor ~= nil then titleLabel.TextColor3 = data.TitleColor end
+                if data.ContentColor ~= nil then contentLabel.TextColor3 = data.ContentColor end
             end
             
-            -- Update canvas size to accommodate new paragraph
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
             return element
         end
         
+        -- =============================================================================
+        -- UI ELEMENTS - INTERACTIVE CONTROLS
+        -- =============================================================================
+        
+        -- Enhanced Toggle with modern pill design
         function tab:CreateToggle(options)
             local toggleName = options.Name or "Toggle"
             local currentValue = options.CurrentValue or false
@@ -1103,184 +1518,81 @@ function VortexUI:CreateWindow(options)
             
             local toggleFrame = CreateElement("Frame", {
                 Name = "ToggleFrame_" .. toggleName,
-                Size = UDim2.new(0, 300, 0, 45),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(48)),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
             toggleFrame.Parent = tabContent
             
-            AddCorner(toggleFrame, UDim.new(0, 10))
-            AddStroke(toggleFrame)
+            AddCorner(toggleFrame, CONFIG.CORNER_RADIUS)
             
-            -- Fade-in animation for toggle frame
             toggleFrame.BackgroundTransparency = 1
-            CreateTween(toggleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            CreateTween(toggleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Label
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(0, 220, 1, 0),
-                Position = UDim2.new(0, 15, 0, 0),
+                Size = UDim2.new(1, -GetResponsiveSize(80), 1, 0),
+                Position = UDim2.new(0, GetResponsiveSize(16), 0, 0),
                 BackgroundTransparency = 1,
                 Text = toggleName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 15,
-                Font = Enum.Font.GothamSemibold,
+                TextSize = GetResponsiveFontSize(14),
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = toggleFrame
             
-            -- Toggle button
+            -- Modern pill-shaped toggle
             local toggleButton = CreateElement("TextButton", {
                 Name = "ToggleButton",
-                Size = UDim2.new(0, 50, 0, 28),
-                Position = UDim2.new(1, -65, 0, 8.5),
-                BackgroundColor3 = CONFIG.SECONDARY_COLOR,
+                Size = GetResponsiveUDim2(UDim2.new(0, 48, 0, 26)),
+                Position = UDim2.new(1, -GetResponsiveSize(64), 0.5, -GetResponsiveSize(13)),
+                BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
-                Text = ""
+                Text = "",
+                AutoButtonColor = false
             })
             toggleButton.Parent = toggleFrame
             
-            AddCorner(toggleButton, UDim.new(0, 14))
-            AddStroke(toggleButton)
+            AddCorner(toggleButton, UDim.new(0, 13))
+            AddStroke(toggleButton, 1, CONFIG.BORDER_COLOR, 0.5)
             
-            -- Tooltip functionality
-            local tooltipFrame = nil
-            local tooltipLabel = nil
-            local tooltipVisible = false
-            
-            local function createTooltip()
-                if not tooltip then
-                    tooltipFrame = CreateElement("Frame", {
-                        Name = "TooltipFrame_" .. toggleName,
-                        Size = UDim2.new(0, 200, 0, 30),
-                        Position = UDim2.new(0, -100, 0, -35),
-                        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
-                        BorderSizePixel = 0,
-                        ZIndex = 1000
-                    })
-                    -- Parent to the main content area instead of toggleFrame.Parent
-                    tooltipFrame.Parent = tabContent
-                    
-                    AddCorner(tooltipFrame, UDim.new(0, 8))
-                    AddStroke(tooltipFrame)
-                    
-                    tooltipLabel = CreateElement("TextLabel", {
-                        Name = "TooltipLabel_" .. toggleName,
-                        Size = UDim2.new(1, -20, 0, 25),
-                        Position = UDim2.new(0, 5, 0, 0),
-                        BackgroundTransparency = 1,
-                        Text = tooltip or "",
-                        TextColor3 = CONFIG.TEXT_COLOR,
-                        TextSize = 14,
-                        Font = Enum.Font.Gotham,
-                        TextXAlignment = Enum.TextXAlignment.Left,
-                        TextYAlignment = Enum.TextYAlignment.Top,
-                        TextWrapped = true,
-                        ZIndex = 1001
-                    })
-                    tooltipLabel.Parent = tooltipFrame
-                    
-                    AddCorner(tooltipLabel, UDim.new(0, 6))
-                end
-            end
-            
-            -- Show tooltip on hover
-            toggleButton.MouseEnter:Connect(function()
-                if tooltip then
-                    createTooltip()
-                    tooltipVisible = true
-                    tooltipFrame.Visible = true
-                    
-                    -- Position tooltip relative to the toggle button
-                    local buttonPos = toggleButton.AbsolutePosition
-                    local buttonSize = toggleButton.AbsoluteSize
-                    local tooltipSize = tooltipFrame.AbsoluteSize
-                    
-                    -- Calculate position to show tooltip above the button
-                    local x = buttonPos.X + (buttonSize.X / 2) - (tooltipSize.X / 2)
-                    local y = buttonPos.Y - tooltipSize.Y - 10
-                    
-                    -- Keep tooltip within screen bounds
-                    local viewportSize = workspace.CurrentCamera.ViewportSize
-                    x = math.max(10, math.min(x, viewportSize.X - tooltipSize.X - 10))
-                    y = math.max(10, math.min(y, viewportSize.Y - tooltipSize.Y - 10))
-                    
-                    tooltipFrame.Position = UDim2.new(0, x, 0, y)
-                end
-            end)
-            
-            -- Hide tooltip on leave
-            toggleButton.MouseLeave:Connect(function()
-                tooltipVisible = false
-                if tooltipFrame then
-                    tooltipFrame.Visible = false
-                end
-            end)
-            
-            -- Toggle indicator
             local toggleIndicator = CreateElement("Frame", {
                 Name = "Indicator",
-                Size = UDim2.new(0, 24, 0, 24),
-                Position = UDim2.new(0, 2, 0, 2),
-                BackgroundColor3 = CONFIG.TEXT_COLOR,
+                Size = GetResponsiveUDim2(UDim2.new(0, 20, 0, 20)),
+                Position = UDim2.new(0, GetResponsiveSize(3), 0.5, -GetResponsiveSize(10)),
+                BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0
             })
             toggleIndicator.Parent = toggleButton
             
-            AddCorner(toggleIndicator, UDim.new(0, 12))
+            AddCorner(toggleIndicator, UDim.new(0, math.min(13, toggleButton.AbsoluteSize.Y/2)))
             
-            -- Check icon
-            local toggleIcon = CreateElement("TextLabel", {
-                Name = "ToggleIcon",
-                Size = UDim2.new(1, 0, 1, 0),
-                Position = UDim2.new(0, 0, 0, 0),
-                BackgroundTransparency = 1,
-                Text = "✓",
-                TextColor3 = Color3.new(1, 1, 1),
-                TextSize = 14,
-                Font = Enum.Font.GothamBold,
-                TextTransparency = 1
-            })
-            toggleIcon.Parent = toggleIndicator
-            
-            -- Store initial state
             ToggleStates[flag] = currentValue
-            
-            -- Track toggle callback for cleanup
             TrackToggle(callback, window, toggleName)
             
             local function updateToggle(enabled)
                 if enabled then
-                    CreateTween(toggleButton, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                        BackgroundColor3 = isLocked and Color3.fromRGB(100, 100, 100) or CONFIG.ACCENT_COLOR,
-                        BackgroundTransparency = isLocked and 0.5 or 0
+                    CreateTween(toggleButton, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
+                        BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.ACCENT_COLOR
                     }):Play()
-                    CreateTween(toggleIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                        Position = UDim2.new(0, 24, 0, 2),
-                        BackgroundColor3 = isLocked and Color3.fromRGB(180, 180, 180) or CONFIG.TEXT_COLOR
-                    }):Play()
-                    CreateTween(toggleIcon, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                        TextTransparency = 0
+                    CreateTween(toggleIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(0, GetResponsiveSize(25), 0.5, -GetResponsiveSize(10)),
+                        BackgroundColor3 = Color3.new(1, 1, 1)
                     }):Play()
                 else
-                    CreateTween(toggleButton, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                        BackgroundColor3 = isLocked and Color3.fromRGB(60, 60, 60) or CONFIG.SECONDARY_COLOR,
-                        BackgroundTransparency = isLocked and 0.5 or 0
+                    CreateTween(toggleButton, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
+                        BackgroundColor3 = isLocked and Color3.fromRGB(50, 50, 55) or CONFIG.INPUT_COLOR
                     }):Play()
-                    CreateTween(toggleIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                        Position = UDim2.new(0, 2, 0, 2),
-                        BackgroundColor3 = isLocked and Color3.fromRGB(180, 180, 180) or CONFIG.TEXT_COLOR
-                    }):Play()
-                    CreateTween(toggleIcon, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                        TextTransparency = 1
+                    CreateTween(toggleIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(0, GetResponsiveSize(3), 0.5, -GetResponsiveSize(10)),
+                        BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
                 end
             end
             
-            -- Initialize state
             updateToggle(currentValue)
             
             toggleButton.MouseButton1Click:Connect(function()
@@ -1292,10 +1604,8 @@ function VortexUI:CreateWindow(options)
                 end
             end)
             
-            -- Store element
             WindowInstances[window].Tabs[tabName].Elements[toggleName] = toggleFrame
             
-            -- Return element with methods
             local element = {}
             function element:Set(value, noCallback)
                 if value ~= currentValue then
@@ -1322,29 +1632,13 @@ function VortexUI:CreateWindow(options)
                 return isLocked
             end
             
-            -- Cleanup tooltip when toggle is destroyed
-            local function cleanupTooltip()
-                if tooltipFrame then
-                    tooltipFrame:Destroy()
-                    tooltipFrame = nil
-                    tooltipLabel = nil
-                end
-            end
-            
-            -- Connect cleanup when toggle frame is destroyed
-            toggleFrame.Destroying:Connect(cleanupTooltip)
-            
-            -- Update canvas size to accommodate new toggle
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
             return element
         end
         
+        -- Enhanced Slider with modern track and thumb
         function tab:CreateSlider(options)
             local sliderName = options.Name or "Slider"
             local range = options.Range or {0, 100}
@@ -1356,42 +1650,62 @@ function VortexUI:CreateWindow(options)
             
             local sliderFrame = CreateElement("Frame", {
                 Name = "SliderFrame_" .. sliderName,
-                Size = UDim2.new(0, 300, 0, 60),
+                Size = UDim2.new(1, 0, 0, GetResponsiveSize(64)),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
             sliderFrame.Parent = tabContent
             
-            AddCorner(sliderFrame, UDim.new(0, 10))
-            AddStroke(sliderFrame)
+            AddCorner(sliderFrame, CONFIG.CORNER_RADIUS)
             
-            -- Label
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(0, 220, 0, 25),
-                Position = UDim2.new(0, 15, 0, 5),
+                Size = UDim2.new(0.7, -GetResponsiveSize(16), 0, GetResponsiveSize(20)),
+                Position = UDim2.new(0, GetResponsiveSize(16), 0, GetResponsiveSize(10)),
                 BackgroundTransparency = 1,
-                Text = sliderName .. ": " .. currentValue .. suffix,
+                Text = sliderName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
-                Font = Enum.Font.GothamSemibold,
+                TextSize = GetResponsiveFontSize(14),
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = sliderFrame
             
-            -- Slider track
+            -- Value display with accent background
+            local valueDisplay = CreateElement("Frame", {
+                Name = "ValueDisplay",
+                Size = GetResponsiveUDim2(UDim2.new(0, 60, 0, 22)),
+                Position = UDim2.new(1, -GetResponsiveSize(76), 0, GetResponsiveSize(8)),
+                BackgroundColor3 = CONFIG.ACCENT_COLOR,
+                BackgroundTransparency = 0.85,
+                BorderSizePixel = 0
+            })
+            valueDisplay.Parent = sliderFrame
+            AddCorner(valueDisplay, CONFIG.CORNER_RADIUS_SM)
+            
+            local valueLabel = CreateElement("TextLabel", {
+                Name = "ValueLabel",
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                Text = currentValue .. suffix,
+                TextColor3 = Color3.new(1, 1, 1),
+                TextSize = GetResponsiveFontSize(12),
+                Font = Enum.Font.Montserrat
+            })
+            valueLabel.Parent = valueDisplay
+            
+            -- Modern slider track
             local sliderTrack = CreateElement("Frame", {
                 Name = "SliderTrack",
-                Size = UDim2.new(0, 270, 0, 6),
-                Position = UDim2.new(0, 15, 0, 40),
+                Size = UDim2.new(1, -GetResponsiveSize(32), 0, GetResponsiveSize(6)),
+                Position = UDim2.new(0, GetResponsiveSize(16), 0, GetResponsiveSize(42)),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0
             })
             sliderTrack.Parent = sliderFrame
             
-            AddCorner(sliderTrack, UDim.new(0, 3))
+            AddCorner(sliderTrack, UDim.new(0, GetResponsiveSize(3)))
             
-            -- Slider fill
             local sliderFill = CreateElement("Frame", {
                 Name = "SliderFill",
                 Size = UDim2.new(0, 0, 1, 0),
@@ -1401,22 +1715,36 @@ function VortexUI:CreateWindow(options)
             })
             sliderFill.Parent = sliderTrack
             
-            AddCorner(sliderFill, UDim.new(0, 3))
+            AddCorner(sliderFill, UDim.new(0, GetResponsiveSize(3)))
             
-            -- Slider button
+            -- Modern slider thumb with glow
             local sliderButton = CreateElement("TextButton", {
                 Name = "SliderButton",
-                Size = UDim2.new(0, 20, 0, 20),
-                Position = UDim2.new(0, -10, 0, -7),
-                BackgroundColor3 = CONFIG.TEXT_COLOR,
+                Size = GetResponsiveUDim2(UDim2.new(0, 18, 0, 18)),
+                Position = UDim2.new(0, -GetResponsiveSize(9), 0.5, -GetResponsiveSize(9)),
+                BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
-                Text = ""
+                Text = "",
+                AutoButtonColor = false
             })
             sliderButton.Parent = sliderTrack
             
-            AddCorner(sliderButton, UDim.new(0, 10))
+            AddCorner(sliderButton, UDim.new(0, math.min(20, sliderTrack.AbsoluteSize.Y/2)))
             
-            -- Store state
+            -- Thumb glow
+            local thumbGlow = CreateElement("Frame", {
+                Name = "ThumbGlow",
+                Size = GetResponsiveUDim2(UDim2.new(1, 8, 1, 8)),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = CONFIG.ACCENT_COLOR,
+                BackgroundTransparency = 0.7,
+                BorderSizePixel = 0,
+                ZIndex = sliderButton.ZIndex - 1
+            })
+            thumbGlow.Parent = sliderButton
+            AddCorner(thumbGlow, UDim.new(0, math.min(24, sliderTrack.AbsoluteSize.Y/2 + 4)))
+            
             ToggleStates[flag] = currentValue
             
             local function updateSlider(value)
@@ -1424,22 +1752,31 @@ function VortexUI:CreateWindow(options)
                 value = math.floor(value / increment + 0.5) * increment
                 
                 local percentage = (value - range[1]) / (range[2] - range[1])
-                sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-                sliderButton.Position = UDim2.new(percentage, -10, 0, -7)
-                label.Text = sliderName .. ": " .. value .. suffix
                 
+                CreateTween(sliderFill, TweenInfo.new(0.1), {
+                    Size = UDim2.new(percentage, 0, 1, 0)
+                }):Play()
+                CreateTween(sliderButton, TweenInfo.new(0.1), {
+                    Position = UDim2.new(percentage, -GetResponsiveSize(9), 0.5, -GetResponsiveSize(9))
+                }):Play()
+                
+                valueLabel.Text = value .. suffix
                 ToggleStates[flag] = value
                 callback(value)
             end
             
-            -- Initialize
             updateSlider(currentValue)
             
-            -- Dragging logic
             local dragging = false
             
             sliderButton.MouseButton1Down:Connect(function()
                 dragging = true
+                CreateTween(sliderButton, TweenInfo.new(0.15), {
+                    Size = GetResponsiveUDim2(UDim2.new(0, 22, 0, 22))
+                }):Play()
+                CreateTween(thumbGlow, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.5
+                }):Play()
             end)
             
             local sliderDragConnection = UserInputService.InputChanged:Connect(function(input)
@@ -1454,24 +1791,23 @@ function VortexUI:CreateWindow(options)
             local dragEndConnection = UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = false
+                    CreateTween(sliderButton, TweenInfo.new(0.15), {
+                        Size = GetResponsiveUDim2(UDim2.new(0, 18, 0, 18))
+                    }):Play()
+                    CreateTween(thumbGlow, TweenInfo.new(0.15), {
+                        BackgroundTransparency = 0.7
+                    }):Play()
                 end
             end)
             
             TrackConnection(sliderDragConnection, window)
             TrackConnection(dragEndConnection, window)
             
-            -- Store element
             WindowInstances[window].Tabs[tabName].Elements[sliderName] = sliderFrame
             
-            -- Update canvas size to accommodate new slider
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
-            -- Return element with methods
             local element = {}
             function element:Set(value)
                 updateSlider(value)
@@ -1479,6 +1815,7 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
+        -- Completely redesigned modern dropdown
         function tab:CreateDropdown(options)
             local dropdownName = options.Name or "Dropdown"
             local optionsList = options.Options or {}
@@ -1489,97 +1826,106 @@ function VortexUI:CreateWindow(options)
             
             local dropdownFrame = CreateElement("Frame", {
                 Name = "DropdownFrame_" .. dropdownName,
-                Size = UDim2.new(0, 300, 0, 40),
+                Size = UDim2.new(1, 0, 0, 70),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
             dropdownFrame.Parent = tabContent
-
             dropdownFrame.ClipsDescendants = false
             dropdownFrame.ZIndex = 30
             
-            AddCorner(dropdownFrame, UDim.new(0, 8))
-            AddStroke(dropdownFrame)
-
+            AddCorner(dropdownFrame, CONFIG.CORNER_RADIUS)
+            
+            -- Dropdown label above
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, 0, 0, 15),
-                Position = UDim2.new(0, 0, 0, -15),
+                Size = UDim2.new(1, -32, 0, 20),
+                Position = UDim2.new(0, 16, 0, 10),
                 BackgroundTransparency = 1,
                 Text = dropdownName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 12,
-                Font = Enum.Font.GothamSemibold,
-                TextXAlignment = Enum.TextXAlignment.Left
+                TextSize = 14,
+                Font = Enum.Font.Montserrat,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 31
             })
             label.Parent = dropdownFrame
-
-            label.ZIndex = dropdownFrame.ZIndex + 1
             
-            -- Dropdown button
+            -- Modern dropdown button with enhanced styling
             local dropdownButton = CreateElement("TextButton", {
                 Name = "DropdownButton",
-                Size = UDim2.new(1, -10, 1, -5),
-                Position = UDim2.new(0, 5, 0, 5),
+                Size = UDim2.new(1, -32, 0, 36),
+                Position = UDim2.new(0, 16, 0, 28),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
-                Text = currentOption or "Select Option",
-                TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
-                Font = Enum.Font.Gotham,
-                TextXAlignment = Enum.TextXAlignment.Left
+                Text = "",
+                AutoButtonColor = false,
+                ZIndex = 31
             })
             dropdownButton.Parent = dropdownFrame
-
-            dropdownButton.ZIndex = dropdownFrame.ZIndex + 1
             
-            AddCorner(dropdownButton, UDim.new(0, 6))
-
-            local buttonStroke = AddStroke(dropdownButton, 1, CONFIG.BORDER_COLOR)
-            buttonStroke.Transparency = 0.35
-
-            local buttonPadding = CreateElement("UIPadding", {
-                PaddingLeft = UDim.new(0, 10),
-                PaddingRight = UDim.new(0, 26)
-            })
-            buttonPadding.Parent = dropdownButton
+            AddCorner(dropdownButton, CONFIG.CORNER_RADIUS_SM)
+            local buttonStroke = AddStroke(dropdownButton, 1, CONFIG.BORDER_COLOR, 0.4)
             
-            -- Arrow
-            local arrow = CreateElement("TextLabel", {
-                Name = "Arrow",
-                Size = UDim2.new(0, 20, 1, 0),
-                Position = UDim2.new(1, -22, 0, 0),
+            -- Selected text
+            local selectedText = CreateElement("TextLabel", {
+                Name = "SelectedText",
+                Size = UDim2.new(1, -40, 1, 0),
+                Position = UDim2.new(0, 14, 0, 0),
                 BackgroundTransparency = 1,
-                Text = "▼",
+                Text = currentOption or "Select option...",
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 12,
-                Font = Enum.Font.GothamBold
+                TextSize = 13,
+                Font = Enum.Font.Montserrat,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 32
             })
-            arrow.Parent = dropdownButton
-
-            arrow.ZIndex = dropdownButton.ZIndex + 1
+            selectedText.Parent = dropdownButton
             
-            -- Options list (initially hidden)
+            -- Modern chevron icon
+            local chevronContainer = CreateElement("Frame", {
+                Name = "ChevronContainer",
+                Size = UDim2.new(0, 24, 0, 24),
+                Position = UDim2.new(1, -30, 0.5, -12),
+                BackgroundTransparency = 1,
+                ZIndex = 32
+            })
+            chevronContainer.Parent = dropdownButton
+            
+            local chevron = CreateElement("ImageLabel", {
+                Name = "Chevron",
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                Image = Icons["chevron-down"] or "rbxassetid://6031090509",
+                ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+                ImageTransparency = 0,
+                ZIndex = 33
+            })
+            chevron.Parent = chevronContainer
+            
+            -- Modern options list with enhanced styling
             local optionsListFrame = CreateElement("ScrollingFrame", {
                 Name = "OptionsList",
-                Size = UDim2.new(1, 0, 0, 0),
-                Position = UDim2.new(0, 0, 1, 5),
+                Size = UDim2.new(1, -32, 0, 0),
+                Position = UDim2.new(0, 16, 0, 68),
                 BackgroundColor3 = CONFIG.SECONDARY_COLOR,
                 BorderSizePixel = 0,
                 Visible = false,
-                ScrollBarThickness = 6,
-                ScrollBarImageColor3 = CONFIG.BORDER_COLOR,
-                ScrollBarImageTransparency = 0.3
+                ScrollBarThickness = 3,
+                ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
+                ScrollBarImageTransparency = 0.5,
+                ZIndex = 100,
+                TopImage = "rbxassetid://6015897843",
+                MidImage = "rbxassetid://6015897843",
+                BottomImage = "rbxassetid://6015897843"
             })
             optionsListFrame.Parent = dropdownFrame
-
-            optionsListFrame.ZIndex = dropdownFrame.ZIndex + 20
             optionsListFrame.ClipsDescendants = true
             
-            AddCorner(optionsListFrame, UDim.new(0, 6))
-    local optionsListStroke = AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR)
-    optionsListStroke.Transparency = 0.35
-
+            AddCorner(optionsListFrame, CONFIG.CORNER_RADIUS_SM)
+            local listStroke = AddStroke(optionsListFrame, 1, CONFIG.BORDER_COLOR, 0.3)
+            
             local listPadding = CreateElement("UIPadding", {
                 PaddingTop = UDim.new(0, 6),
                 PaddingBottom = UDim.new(0, 6),
@@ -1594,7 +1940,6 @@ function VortexUI:CreateWindow(options)
             })
             optionsLayout.Parent = optionsListFrame
             
-            -- Store state
             ToggleStates[flag] = currentOption
             
             local isOpen = false
@@ -1607,73 +1952,106 @@ function VortexUI:CreateWindow(options)
             else
                 selectedOptions = currentOption
             end
-
+            
             local outsideConn = nil
-
+            
             local function updateDropdownText()
                 if multipleOptions then
-                    dropdownButton.Text = #selectedOptions > 0 and table.concat(selectedOptions, ", ") or "Select Options"
+                    local text = #selectedOptions > 0 and table.concat(selectedOptions, ", ") or "Select options..."
+                    selectedText.Text = text
+                    selectedText.TextColor3 = CONFIG.TEXT_COLOR
                 else
-                    dropdownButton.Text = selectedOptions or "Select Option"
+                    selectedText.Text = selectedOptions or "Select option..."
+                    selectedText.TextColor3 = CONFIG.TEXT_COLOR
                 end
             end
-
-            local function updateCanvasSize()
+            
+            local function updateCanvasSizeDropdown()
                 local contentY = optionsLayout.AbsoluteContentSize.Y + 12
                 optionsListFrame.CanvasSize = UDim2.new(0, 0, 0, contentY)
-                return math.min(contentY, 180)
+                return math.min(contentY, 160)
             end
-
+            
             optionsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                local openHeight = updateCanvasSize()
+                local openHeight = updateCanvasSizeDropdown()
                 if isOpen then
-                    optionsListFrame.Size = UDim2.new(1, 0, 0, openHeight)
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, openHeight)
                 end
             end)
-
+            
             local function isPointInGui(guiObject, point)
                 local pos = guiObject.AbsolutePosition
                 local size = guiObject.AbsoluteSize
                 return point.X >= pos.X and point.X <= (pos.X + size.X) and point.Y >= pos.Y and point.Y <= (pos.Y + size.Y)
             end
-
+            
             local function setOpen(open)
-                if isOpen == open then
-                    return
-                end
+                if isOpen == open then return end
                 isOpen = open
-
+                
                 if outsideConn then
                     outsideConn:Disconnect()
                     outsideConn = nil
                 end
-
+                
                 if isOpen then
-                    local openHeight = updateCanvasSize()
+                    local openHeight = updateCanvasSizeDropdown()
                     optionsListFrame.Visible = true
-                    optionsListFrame.Size = UDim2.new(1, 0, 0, 0)
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, 0)
+                    optionsListFrame.BackgroundTransparency = 1
                     
-                    -- Set high ZIndex to overlay over other elements
-                    dropdownFrame.ZIndex = 100
-                    optionsListFrame.ZIndex = 101
-                    label.ZIndex = 102
-                    dropdownButton.ZIndex = 102
-                    arrow.ZIndex = 103
-
-                    CreateTween(optionsListFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(1, 0, 0, openHeight)
+                    dropdownFrame.ZIndex = 1000
+                    optionsListFrame.ZIndex = 1001
+                    label.ZIndex = 1002
+                    dropdownButton.ZIndex = 1002
+                    selectedText.ZIndex = 1003
+                    chevronContainer.ZIndex = 1003
+                    chevron.ZIndex = 1004
+                    
+                    -- Ensure dropdown can extend beyond content area
+                    local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
+                    if contentArea then
+                        contentArea.ClipsDescendants = false
+                        
+                        -- Position dropdown relative to its parent, not screen space
+                        optionsListFrame.Position = UDim2.new(0, 16, 1, 4)
+                        
+                        local dropdownBottom = dropdownFrame.AbsolutePosition.Y + dropdownFrame.AbsoluteSize.Y + openHeight
+                        local contentBottom = contentArea.AbsolutePosition.Y + contentArea.AbsoluteSize.Y
+                        local contentTop = contentArea.AbsolutePosition.Y
+                        
+                        -- If dropdown would go below visible area, scroll to make it visible
+                        if dropdownBottom > contentBottom then
+                            local extraSpace = dropdownBottom - contentBottom
+                            local currentScroll = contentArea.CanvasPosition.Y
+                            local newScroll = math.min(currentScroll + extraSpace + 10, contentArea.CanvasSize.Y - contentArea.AbsoluteSize.Y)
+                            contentArea.CanvasPosition = Vector2.new(0, newScroll)
+                        end
+                        
+                        -- If dropdown would go above visible area, scroll up
+                        if dropdownFrame.AbsolutePosition.Y < contentTop then
+                            local currentScroll = contentArea.CanvasPosition.Y
+                            local newScroll = math.max(currentScroll - (contentTop - dropdownFrame.AbsolutePosition.Y) - 10, 0)
+                            contentArea.CanvasPosition = Vector2.new(0, newScroll)
+                        end
+                    end
+                    
+                    CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, -32, 0, openHeight),
+                        BackgroundTransparency = 0
                     }):Play()
-                    CreateTween(arrow, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    
+                    CreateTween(chevron, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
                         Rotation = 180
                     }):Play()
-
+                    
+                    CreateTween(buttonStroke, TweenInfo.new(0.15), {
+                        Color = CONFIG.ACCENT_COLOR
+                    }):Play()
+                    
                     outsideConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-                        if gameProcessed then
-                            return
-                        end
-                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
-                            return
-                        end
+                        if gameProcessed then return end
+                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
                         local p = UserInputService:GetMouseLocation()
                         if not isPointInGui(dropdownFrame, p) and not isPointInGui(optionsListFrame, p) then
                             setOpen(false)
@@ -1681,123 +2059,203 @@ function VortexUI:CreateWindow(options)
                     end)
                     TrackConnection(outsideConn, window)
                 else
-                    local tween = CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-                        Size = UDim2.new(1, 0, 0, 0)
+                    local tween = CreateTween(optionsListFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                        Size = UDim2.new(1, -32, 0, 0),
+                        BackgroundTransparency = 1
                     })
                     tween:Play()
-                    CreateTween(arrow, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                    
+                    CreateTween(chevron, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {
                         Rotation = 0
                     }):Play()
+                    
+                    CreateTween(buttonStroke, TweenInfo.new(0.15), {
+                        Color = CONFIG.BORDER_COLOR
+                    }):Play()
+                    
                     tween.Completed:Connect(function()
                         if not isOpen then
                             optionsListFrame.Visible = false
-                            -- Reset ZIndex to normal values when closed
                             dropdownFrame.ZIndex = 30
                             optionsListFrame.ZIndex = 50
                             label.ZIndex = 31
                             dropdownButton.ZIndex = 31
-                            arrow.ZIndex = 32
+                            selectedText.ZIndex = 32
+                            chevronContainer.ZIndex = 32
+                            chevron.ZIndex = 33
+                            
+                            -- Restore ClipsDescendants on content area
+                            local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
+                            if contentArea then
+                                contentArea.ClipsDescendants = true
+                            end
+                            
+                            -- Restore ZIndex on content area
+                            local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
+                            if contentArea then
+                                contentArea.ZIndex = 1
+                            end
                         end
                     end)
                 end
             end
-
+            
             updateDropdownText()
             
-            -- Create option buttons
+            -- Create modern option buttons
             local function createOptionButton(i, option)
+                local isSelected = multipleOptions and table.find(selectedOptions, option) or selectedOptions == option
+                
                 local optionButton = CreateElement("TextButton", {
                     Name = "Option_" .. i,
-                    Size = UDim2.new(1, 0, 0, 30),
-                    BackgroundColor3 = CONFIG.INPUT_COLOR,
+                    Size = UDim2.new(1, 0, 0, 32),
+                    BackgroundColor3 = isSelected and CONFIG.ACCENT_COLOR or CONFIG.PANEL_COLOR,
+                    BackgroundTransparency = isSelected and 0.85 or 0,
                     BorderSizePixel = 0,
-                    Text = option,
-                    TextColor3 = CONFIG.TEXT_COLOR,
-                    TextSize = 14,
-                    Font = Enum.Font.Gotham,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    AutoButtonColor = false
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 102
                 })
                 optionButton.Parent = optionsListFrame
-
-                optionButton.ZIndex = optionsListFrame.ZIndex + 1
                 
-                -- Update ZIndex when dropdown opens/closes
-                local function updateOptionZIndex()
-                    optionButton.ZIndex = optionsListFrame.ZIndex + 1
+                AddCorner(optionButton, CONFIG.CORNER_RADIUS_SM)
+                
+                local optionLabel = CreateElement("TextLabel", {
+                    Size = UDim2.new(1, -24, 1, 0),
+                    Position = UDim2.new(0, 12, 0, 0),
+                    BackgroundTransparency = 1,
+                    Text = option,
+                    TextColor3 = isSelected and Color3.new(1, 1, 1) or CONFIG.TEXT_COLOR,
+                    TextSize = 13,
+                    Font = isSelected and Enum.Font.Montserrat or Enum.Font.Montserrat,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 103
+                })
+                optionLabel.Parent = optionButton
+                
+                -- Checkmark for selected items
+                local checkmark = CreateElement("TextLabel", {
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(1, -24, 0.5, -8),
+                    BackgroundTransparency = 1,
+                    Text = "✓",
+                    TextColor3 = Color3.new(1, 1, 1),
+                    TextSize = 12,
+                    Font = Enum.Font.Montserrat,
+                    Visible = isSelected,
+                    ZIndex = 103
+                })
+                checkmark.Parent = optionButton
+                
+                local function updateOptionStyle(selected)
+                    CreateTween(optionButton, TweenInfo.new(0.15), {
+                        BackgroundColor3 = selected and CONFIG.ACCENT_COLOR or CONFIG.PANEL_COLOR,
+                        BackgroundTransparency = selected and 0.85 or 0
+                    }):Play()
+                    CreateTween(optionLabel, TweenInfo.new(0.15), {
+                        TextColor3 = selected and Color3.new(1, 1, 1) or CONFIG.TEXT_COLOR
+                    }):Play()
+                    checkmark.Visible = selected
                 end
                 
-                -- We'll call this when the dropdown state changes
-
-                AddCorner(optionButton, UDim.new(0, 6))
-
-                local optionPadding = CreateElement("UIPadding", {
-                    PaddingLeft = UDim.new(0, 10),
-                    PaddingRight = UDim.new(0, 10)
-                })
-                optionPadding.Parent = optionButton
-
                 optionButton.MouseButton1Click:Connect(function()
                     if multipleOptions then
                         local index = table.find(selectedOptions, option)
                         if index then
                             table.remove(selectedOptions, index)
+                            updateOptionStyle(false)
                         else
                             table.insert(selectedOptions, option)
+                            updateOptionStyle(true)
                         end
                         updateDropdownText()
                     else
+                        -- Update all options
+                        for _, child in pairs(optionsListFrame:GetChildren()) do
+                            if child:IsA("TextButton") then
+                                local childLabel = child:FindFirstChildWhichIsA("TextLabel")
+                                local childCheck = child:FindFirstChildWhichIsA("TextLabel", true)
+                                -- Find the checkmark by looking for the one with "✓" text
+                                for _, grandChild in pairs(child:GetChildren()) do
+                                    if grandChild:IsA("TextLabel") and grandChild.Text == "✓" then
+                                        childCheck = grandChild
+                                        break
+                                    end
+                                end
+                                if childCheck and childCheck.Text == "✓" then
+                                    childCheck.Visible = false
+                                end
+                                if childLabel then
+                                    CreateTween(child, TweenInfo.new(0.15), {
+                                        BackgroundColor3 = CONFIG.PANEL_COLOR,
+                                        BackgroundTransparency = 0
+                                    }):Play()
+                                    CreateTween(childLabel, TweenInfo.new(0.15), {
+                                        TextColor3 = CONFIG.TEXT_COLOR
+                                    }):Play()
+                                end
+                            end
+                        end
+                        
                         selectedOptions = option
+                        updateOptionStyle(true)
                         updateDropdownText()
                         setOpen(false)
                     end
-
+                    
                     ToggleStates[flag] = selectedOptions
                     callback(selectedOptions)
                 end)
-
+                
                 optionButton.MouseEnter:Connect(function()
-                    CreateTween(optionButton, TweenInfo.new(0.18), {
-                        BackgroundColor3 = CONFIG.PANEL_COLOR
-                    }):Play()
+                    if not (multipleOptions and table.find(selectedOptions, option) or selectedOptions == option) then
+                        CreateTween(optionButton, TweenInfo.new(0.1), {
+                            BackgroundColor3 = CONFIG.INPUT_COLOR
+                        }):Play()
+                    end
                 end)
-
+                
                 optionButton.MouseLeave:Connect(function()
-                    CreateTween(optionButton, TweenInfo.new(0.18), {
-                        BackgroundColor3 = CONFIG.INPUT_COLOR
-                    }):Play()
+                    local selected = multipleOptions and table.find(selectedOptions, option) or selectedOptions == option
+                    if not selected then
+                        CreateTween(optionButton, TweenInfo.new(0.1), {
+                            BackgroundColor3 = CONFIG.PANEL_COLOR
+                        }):Play()
+                    end
                 end)
-
+                
                 return optionButton
             end
-
+            
             for i, option in ipairs(optionsList) do
                 createOptionButton(i, option)
             end
-
-            updateCanvasSize()
-
+            
+            updateCanvasSizeDropdown()
+            
+            -- Hover effects for main button
             dropdownButton.MouseEnter:Connect(function()
-                CreateTween(dropdownButton, TweenInfo.new(0.18), {
-                    BackgroundColor3 = CONFIG.PANEL_COLOR
-                }):Play()
+                if not isOpen then
+                    CreateTween(dropdownButton, TweenInfo.new(0.15), {
+                        BackgroundColor3 = CONFIG.PANEL_COLOR
+                    }):Play()
+                end
             end)
-
+            
             dropdownButton.MouseLeave:Connect(function()
-                CreateTween(dropdownButton, TweenInfo.new(0.18), {
-                    BackgroundColor3 = CONFIG.INPUT_COLOR
-                }):Play()
+                if not isOpen then
+                    CreateTween(dropdownButton, TweenInfo.new(0.15), {
+                        BackgroundColor3 = CONFIG.INPUT_COLOR
+                    }):Play()
+                end
             end)
-
-            -- Toggle dropdown
+            
             dropdownButton.MouseButton1Click:Connect(function()
                 setOpen(not isOpen)
             end)
             
-            -- Store element
             WindowInstances[window].Tabs[tabName].Elements[dropdownName] = dropdownFrame
             
-            -- Return element with methods
             local element = {}
             function element:Set(options)
                 if multipleOptions then
@@ -1811,25 +2269,24 @@ function VortexUI:CreateWindow(options)
             
             function element:Refresh(newOptions)
                 optionsList = newOptions
-                -- Clear existing options
                 for _, child in pairs(optionsListFrame:GetChildren()) do
                     if child:IsA("TextButton") then
                         child:Destroy()
                     end
                 end
-                -- Recreate options
                 for i, option in ipairs(optionsList) do
                     createOptionButton(i, option)
                 end
-                updateCanvasSize()
+                updateCanvasSizeDropdown()
                 if isOpen then
-                    optionsListFrame.Size = UDim2.new(1, 0, 0, updateCanvasSize())
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, updateCanvasSizeDropdown())
                 end
             end
             
             return element
         end
         
+        -- Enhanced Input field
         function tab:CreateInput(options)
             local inputName = options.Name or "Input"
             local currentValue = options.CurrentValue or ""
@@ -1840,51 +2297,79 @@ function VortexUI:CreateWindow(options)
             
             local inputFrame = CreateElement("Frame", {
                 Name = "InputFrame_" .. inputName,
-                Size = UDim2.new(0, 240, 0, 40),
+                Size = UDim2.new(1, 0, 0, 70),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
             inputFrame.Parent = tabContent
             
-            AddCorner(inputFrame, UDim.new(0, 8))
-            AddStroke(inputFrame)
+            AddCorner(inputFrame, CONFIG.CORNER_RADIUS)
             
-            -- Label
             local label = CreateElement("TextLabel", {
                 Name = "Label",
-                Size = UDim2.new(1, 0, 0, 15),
-                Position = UDim2.new(0, 0, 0, -15),
+                Size = UDim2.new(1, -32, 0, 20),
+                Position = UDim2.new(0, 16, 0, 10),
                 BackgroundTransparency = 1,
                 Text = inputName,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 12,
-                Font = Enum.Font.GothamSemibold,
+                TextSize = 14,
+                Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             label.Parent = inputFrame
             
-            -- TextBox
+            local textBoxContainer = CreateElement("Frame", {
+                Name = "TextBoxContainer",
+                Size = UDim2.new(1, -32, 0, 36),
+                Position = UDim2.new(0, 16, 0, 28),
+                BackgroundColor3 = CONFIG.INPUT_COLOR,
+                BorderSizePixel = 0
+            })
+            textBoxContainer.Parent = inputFrame
+            AddCorner(textBoxContainer, CONFIG.CORNER_RADIUS_SM)
+            local inputStroke = AddStroke(textBoxContainer, 1, CONFIG.BORDER_COLOR, 0.4)
+            
             local textBox = CreateElement("TextBox", {
                 Name = "TextBox",
-                Size = UDim2.new(1, -10, 1, -5),
-                Position = UDim2.new(0, 5, 0, 5),
-                BackgroundColor3 = CONFIG.INPUT_COLOR,
-                BorderSizePixel = 0,
+                Size = UDim2.new(1, -24, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                BackgroundTransparency = 1,
                 Text = currentValue,
                 PlaceholderText = placeholderText,
-                PlaceholderColor3 = CONFIG.SUB_TEXT_COLOR,
+                PlaceholderColor3 = CONFIG.MUTED_COLOR,
                 TextColor3 = CONFIG.TEXT_COLOR,
-                TextSize = 14,
-                Font = Enum.Font.Gotham
+                TextSize = 13,
+                Font = Enum.Font.Montserrat,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ClearTextOnFocus = false
             })
-            textBox.Parent = inputFrame
+            textBox.Parent = textBoxContainer
             
-            AddCorner(textBox, UDim.new(0, 6))
-            
-            -- Store state
             ToggleStates[flag] = currentValue
             
+            textBox.Focused:Connect(function()
+                CreateTween(inputStroke, TweenInfo.new(0.15), {
+                    Color = CONFIG.ACCENT_COLOR,
+                    Transparency = 0
+                }):Play()
+                CreateTween(textBoxContainer, TweenInfo.new(0.15), {
+                    BackgroundColor3 = Color3.fromRGB(
+                        math.min(255, math.max(0, CONFIG.INPUT_COLOR.R * 255 + 8)),
+                        math.min(255, math.max(0, CONFIG.INPUT_COLOR.G * 255 + 8)),
+                        math.min(255, math.max(0, CONFIG.INPUT_COLOR.B * 255 + 8))
+                    )
+                }):Play()
+            end)
+            
             textBox.FocusLost:Connect(function(enterPressed)
+                CreateTween(inputStroke, TweenInfo.new(0.15), {
+                    Color = CONFIG.BORDER_COLOR,
+                    Transparency = 0.4
+                }):Play()
+                CreateTween(textBoxContainer, TweenInfo.new(0.15), {
+                    BackgroundColor3 = CONFIG.INPUT_COLOR
+                }):Play()
+                
                 local text = textBox.Text
                 if removeTextAfterFocusLost then
                     textBox.Text = ""
@@ -1893,18 +2378,11 @@ function VortexUI:CreateWindow(options)
                 callback(text)
             end)
             
-            -- Store element
             WindowInstances[window].Tabs[tabName].Elements[inputName] = inputFrame
             
-            -- Update canvas size to accommodate new input
             task.wait()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-            end
+            updateCanvasSize()
             
-            -- Return element with methods
             local element = {}
             function element:Set(text)
                 textBox.Text = text
@@ -1914,33 +2392,28 @@ function VortexUI:CreateWindow(options)
         end
         
         -- Select first tab by default
-        local tabCount = 0
+        local tabCountCheck = 0
         for _ in pairs(WindowInstances[window].Tabs) do
-            tabCount = tabCount + 1
+            tabCountCheck = tabCountCheck + 1
         end
         
-        if tabCount == 1 then
+        if tabCountCheck == 1 then
             tabContent.Visible = true
-            tabContent.BackgroundColor3 = CONFIG.PRIMARY_COLOR
-            tabButton.BackgroundColor3 = CONFIG.PANEL_COLOR
+            tabButton.BackgroundTransparency = 0.7
+            tabLabel.TextColor3 = CONFIG.TEXT_COLOR
+            if tabIcon then
+                tabIcon.ImageColor3 = CONFIG.ACCENT_COLOR
+            end
             accentIndicator.Visible = true
             accentIndicator.Position = UDim2.new(0, 0, 0, 0)
             accentIndicator.BackgroundColor3 = CONFIG.ACCENT_COLOR
             
-            -- Enhanced first tab appearance with smooth fade
-            CreateTween(tabContent, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            CreateTween(tabContent, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {
                 BackgroundTransparency = 0
             }):Play()
             
-            -- Smooth canvas size update for first tab
-            task.wait() -- Wait a frame for layout to calculate
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                CreateTween(contentArea, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + 40)
-                }):Play()
-            end
+            task.wait()
+            updateCanvasSize()
         else
             tabContent.Visible = false
         end
@@ -1948,7 +2421,6 @@ function VortexUI:CreateWindow(options)
         return tab
     end
     
-    -- Call the callback if provided
     if onWindowCreated then
         onWindowCreated(window)
     end
@@ -1956,17 +2428,18 @@ function VortexUI:CreateWindow(options)
     return window
 end
 
--- Key System Window
+-- =============================================================================
+-- KEY SYSTEM & AUTHENTICATION
+-- =============================================================================
+
+-- Enhanced Key System Window with modern design
 function VortexUI:ShowKeyWindow(callback, keySystemData)
-    -- Key persistence system using executor file system API
     local function loadSavedKey()
         local success, result = pcall(function()
-            -- Check if Vortex folder exists, create if not
             if not isfolder("Vortex") then
                 makefolder("Vortex")
             end
             
-            -- Check if key file exists
             if isfile("Vortex/Key.txt") then
                 local content = readfile("Vortex/Key.txt")
                 return content and content:gsub("%s+$", "") or nil
@@ -1976,21 +2449,15 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         return success and result or nil
     end
     
-    -- Function to save key to executor file system
     local function saveKey(key)
         pcall(function()
-            -- Ensure Vortex folder exists
             if not isfolder("Vortex") then
                 makefolder("Vortex")
             end
-            
-            -- Write key to file
             writefile("Vortex/Key.txt", key)
-            print("Key saved to Vortex/Key.txt")
         end)
     end
     
-    -- Function to check if saved key is still valid
     local function isSavedKeyValid(savedKey)
         if not savedKey then return false end
         for _, validKey in ipairs(keySystemData.ValidKeys) do
@@ -2001,7 +2468,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         return false
     end
     
-    -- Try to load and validate saved key first
     local savedKey = loadSavedKey()
     if isSavedKeyValid(savedKey) then
         KeySystem.LastValidKey = savedKey
@@ -2010,18 +2476,15 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         return
     end
     
-    -- Check if we already have a valid key that's still in the valid keys list
     if KeySystem.LastValidKey then
         for _, validKey in ipairs(keySystemData.ValidKeys) do
             if KeySystem.LastValidKey == validKey then
-                -- Key is still valid, auto-authenticate and save it
                 saveKey(KeySystem.LastValidKey)
                 KeySystem.Authenticated = true
                 callback(true)
                 return
             end
         end
-        -- If we get here, the last key is no longer valid
         KeySystem.LastValidKey = nil
     end
     
@@ -2038,11 +2501,9 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     screenGui.Parent = CoreGui
     
-    -- Add destruction detection for key window
     local keyWindowName = "VortexKeyWindow"
     local cleanupCalled = false
     
-    -- Monitor for UI destruction
     local destructionConnection
     destructionConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if not screenGui or not screenGui.Parent then
@@ -2056,7 +2517,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
         end
     end)
     
-    -- Also monitor for CoreGui children removal
     local coreGuiConnection
     coreGuiConnection = CoreGui.ChildRemoved:Connect(function(child)
         if child.Name == keyWindowName then
@@ -2072,423 +2532,690 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
             end
         end
     end)
-
-    -- Background overlay with blur effect
+    
+    -- Modern overlay
     local overlay = CreateElement("Frame", {
         Name = "Overlay",
         Size = UDim2.new(1, 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.7,
+        BackgroundTransparency = 0.5,
         BorderSizePixel = 0
     })
     overlay.Parent = screenGui
     
-    -- Remove blur effect for cleaner appearance
-    -- local blurEffect = Instance.new("BlurEffect")
-    -- blurEffect.Size = 24
-    -- blurEffect.Parent = game:GetService("Lighting")
-
-    -- Enhanced shadow with gradient
-    local shadow = CreateElement("Frame", {
-        Name = "Shadow",
-        Size = UDim2.new(0, 420, 0, 220),
-        Position = UDim2.new(0.5, -210, 0.5, -110),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.8,
-        BorderSizePixel = 0
-    })
-    shadow.Parent = overlay
-
-    AddCorner(shadow, UDim.new(0, 16))
+    -- Fade in overlay
+    overlay.BackgroundTransparency = 1
+    CreateTween(overlay, TweenInfo.new(0.3), {
+        BackgroundTransparency = 0.5
+    }):Play()
     
-    -- Add gradient to shadow
-    local shadowGradient = Instance.new("UIGradient")
-    shadowGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
-    }
-    shadowGradient.Rotation = 45
-    shadowGradient.Parent = shadow
-
-    -- Enhanced key window with better styling
+    -- Modern key window with glass effect
     local keyWindow = CreateElement("Frame", {
         Name = "KeyWindow",
-        Size = UDim2.new(0, 420, 0, 280),
-        Position = UDim2.new(0.5, -210, 0.5, -140),
+        Size = UDim2.new(0, 380, 0, 320),
+        Position = UDim2.new(0.5, -190, 0.5, -160),
         BackgroundColor3 = CONFIG.PRIMARY_COLOR,
         BorderSizePixel = 0
     })
     keyWindow.Parent = overlay
-
-    AddCorner(keyWindow, UDim.new(0, 16))
-    AddStroke(keyWindow)
     
-    -- Add gradient background to key window
-    local windowGradient = Instance.new("UIGradient")
-    windowGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, CONFIG.PRIMARY_COLOR),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(CONFIG.PRIMARY_COLOR.R * 0.9, CONFIG.PRIMARY_COLOR.G * 0.9, CONFIG.PRIMARY_COLOR.B * 0.9))
-    }
-    windowGradient.Rotation = 90
-    windowGradient.Parent = keyWindow
+    AddCorner(keyWindow, CONFIG.CORNER_RADIUS_XL)
+    AddStroke(keyWindow, 1, CONFIG.BORDER_COLOR, 0.5)
     
     -- Animated entrance
     keyWindow.Size = UDim2.new(0, 0, 0, 0)
     keyWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    keyWindow.BackgroundTransparency = 1
+    
     CreateTween(keyWindow, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 420, 0, 280),
-        Position = UDim2.new(0.5, -210, 0.5, -140)
+        Size = UDim2.new(0, 380, 0, 320),
+        Position = UDim2.new(0.5, -190, 0.5, -160),
+        BackgroundTransparency = 0
     }):Play()
     
-    -- Enhanced header with improved styling
-    local headerFrame = CreateElement("Frame", {
-        Name = "HeaderFrame",
-        Size = UDim2.new(1, 0, 0, 60),
+    -- Accent header strip
+    local headerAccent = CreateElement("Frame", {
+        Name = "HeaderAccent",
+        Size = UDim2.new(1, 0, 0, 4),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = CONFIG.ACCENT_COLOR,
         BorderSizePixel = 0
     })
-    headerFrame.Parent = keyWindow
+    headerAccent.Parent = keyWindow
     
-    AddCorner(headerFrame, UDim.new(0, 16))
+    -- Only round top of header accent
+    local accentCorner = Instance.new("UICorner")
+    accentCorner.CornerRadius = CONFIG.CORNER_RADIUS_XL
+    accentCorner.Parent = headerAccent
     
-    -- Add gradient to header
-    local headerGradient = Instance.new("UIGradient")
-    headerGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)), -- Blue start
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(124, 119, 255)) -- Lighter blue end
-    }
-    headerGradient.Rotation = 90
-    headerGradient.Parent = headerFrame
-    
-    -- Lock icon
-    local lockIcon = CreateElement("ImageLabel", {
-        Name = "LockIcon",
-        Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new(0, 20, 0.5, -12),
-        BackgroundTransparency = 1,
-        Image = "rbxasset://textures/ui/InspectMenu/lock.png",
-        ImageColor3 = Color3.new(1, 1, 1),
-        ImageTransparency = 0.2
+    local accentCover = CreateElement("Frame", {
+        Size = UDim2.new(1, 0, 0.5, 0),
+        Position = UDim2.new(0, 0, 0.5, 0),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BorderSizePixel = 0
     })
-    lockIcon.Parent = headerFrame
+    accentCover.Parent = headerAccent
     
-    -- Enhanced title
+    -- Add gradient to accent
+    local accentGradient = Instance.new("UIGradient")
+    accentGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
+        ColorSequenceKeypoint.new(1, CONFIG.ACCENT_HOVER)
+    }
+    accentGradient.Rotation = 90
+    accentGradient.Parent = headerAccent
+    
+    -- Lock icon container
+    local iconContainer = CreateElement("Frame", {
+        Name = "IconContainer",
+        Size = UDim2.new(0, 56, 0, 56),
+        Position = UDim2.new(0.5, -28, 0, 28),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BackgroundTransparency = 0.9,
+        BorderSizePixel = 0
+    })
+    iconContainer.Parent = keyWindow
+    AddCorner(iconContainer, UDim.new(1, 0))
+    
+    local lockIcon = CreateElement("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "🔐",
+        TextSize = 28
+    })
+    lockIcon.Parent = iconContainer
+    
+    -- Title
     local titleLabel = CreateElement("TextLabel", {
         Name = "TitleLabel",
-        Size = UDim2.new(1, -80, 1, 0),
-        Position = UDim2.new(0, 50, 0, 0),
+        Size = UDim2.new(1, -40, 0, 24),
+        Position = UDim2.new(0, 20, 0, 96),
         BackgroundTransparency = 1,
         Text = "Authentication Required",
-        TextColor3 = Color3.new(1, 1, 1),
+        TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 18,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Center
     })
-    titleLabel.Parent = headerFrame
+    titleLabel.Parent = keyWindow
     
-    -- Description label
     local descLabel = CreateElement("TextLabel", {
         Name = "DescLabel",
         Size = UDim2.new(1, -40, 0, 20),
-        Position = UDim2.new(0, 20, 0, 70),
+        Position = UDim2.new(0, 20, 0, 122),
         BackgroundTransparency = 1,
-        Text = "Please enter your license key to continue",
+        Text = "Enter your license key to continue",
         TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = 14,
-        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        Font = Enum.Font.Montserrat,
         TextXAlignment = Enum.TextXAlignment.Center
     })
     descLabel.Parent = keyWindow
     
-    -- Enhanced key input with better styling
+    -- Modern key input
     local keyInputFrame = CreateElement("Frame", {
         Name = "KeyInputFrame",
-        Size = UDim2.new(1, -40, 0, 50),
-        Position = UDim2.new(0, 20, 0, 100),
+        Size = UDim2.new(1, -48, 0, 46),
+        Position = UDim2.new(0, 24, 0, 158),
         BackgroundColor3 = CONFIG.INPUT_COLOR,
         BorderSizePixel = 0
     })
     keyInputFrame.Parent = keyWindow
     
-    AddCorner(keyInputFrame, UDim.new(0, 10))
-    AddStroke(keyInputFrame)
-    
-    -- Key icon in input
-    local keyIcon = CreateElement("ImageLabel", {
-        Name = "KeyIcon",
-        Size = UDim2.new(0, 20, 0, 20),
-        Position = UDim2.new(0, 15, 0.5, -10),
-        BackgroundTransparency = 1,
-        Image = "rbxasset://textures/ui/InspectMenu/key.png",
-        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
-        ImageTransparency = 0.5
-    })
-    keyIcon.Parent = keyInputFrame
+    AddCorner(keyInputFrame, CONFIG.CORNER_RADIUS)
+    local keyInputStroke = AddStroke(keyInputFrame, 1, CONFIG.BORDER_COLOR, 0.4)
     
     local keyInput = CreateElement("TextBox", {
         Name = "KeyInput",
-        Size = UDim2.new(1, -50, 1, 0),
-        Position = UDim2.new(0, 40, 0, 0),
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
         Text = "",
         PlaceholderText = "Enter your license key...",
-        PlaceholderColor3 = CONFIG.SUB_TEXT_COLOR,
+        PlaceholderColor3 = CONFIG.MUTED_COLOR,
         TextColor3 = CONFIG.TEXT_COLOR,
         TextSize = 14,
-        Font = Enum.Font.Gotham,
-        TextXAlignment = Enum.TextXAlignment.Left
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false
     })
     keyInput.Parent = keyInputFrame
     
-    -- Enhanced status label with better positioning
-    local statusLabel = CreateElement("TextLabel", {
-        Name = "StatusLabel",
-        Size = UDim2.new(1, -40, 0, 20),
-        Position = UDim2.new(0, 20, 0, 160),
-        BackgroundTransparency = 1,
-        Text = "",
-        TextColor3 = CONFIG.ERROR_COLOR,
-        TextSize = 12,
-        Font = Enum.Font.Gotham,
-        TextXAlignment = Enum.TextXAlignment.Center
-    })
-    statusLabel.Parent = keyWindow
-    
-    -- Button container for better layout
-    local buttonContainer = CreateElement("Frame", {
-        Name = "ButtonContainer",
-        Size = UDim2.new(1, -40, 0, 40),
-        Position = UDim2.new(0, 20, 0, 190),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0
-    })
-    buttonContainer.Parent = keyWindow
-    
-    -- Enhanced submit button with better styling
-    local submitButton = CreateElement("TextButton", {
-        Name = "VortexSubmitButton",
-        Size = UDim2.new(0, 120, 1, 0),
-        Position = UDim2.new(0.5, -60, 0, 0),
-        BackgroundColor3 = CONFIG.ACCENT_COLOR,
-        BorderSizePixel = 0,
-        Text = "Authenticate",
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 14,
-        Font = Enum.Font.GothamSemibold,
-        AutoButtonColor = false
-    })
-    submitButton.Parent = buttonContainer
-    
-    -- Gradient removed for cleaner appearance
-    
-    AddCorner(submitButton, UDim.new(0, 8))
-    
-    local buttonStroke = AddStroke(submitButton, 1, Color3.fromRGB(255, 255, 255))
-    buttonStroke.Transparency = 0.3
-    
-    -- Enhanced close button with better positioning
-    local closeButton = CreateElement("TextButton", {
-        Name = "CloseButton",
-        Size = UDim2.new(0, 32, 0, 32),
-        Position = UDim2.new(1, -16, 0, -16),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundTransparency = 0.9,
-        BorderSizePixel = 0,
-        Text = "X",
-        TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 16,
-        Font = Enum.Font.GothamBold,
-        AutoButtonColor = false
-    })
-    closeButton.Parent = headerFrame
-    
-    AddCorner(closeButton, UDim.new(0, 16))
-    
-    -- Enhanced button interactions without gradient
-    submitButton.MouseEnter:Connect(function()
-        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = Color3.fromRGB(CONFIG.ACCENT_COLOR.R * 1.1, CONFIG.ACCENT_COLOR.G * 1.1, CONFIG.ACCENT_COLOR.B * 1.1)
-        }):Play()
-        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 125, 1, 0)
-        }):Play()
-    end)
-    
-    submitButton.MouseLeave:Connect(function()
-        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = CONFIG.ACCENT_COLOR
-        }):Play()
-        CreateTween(submitButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 120, 1, 0)
-        }):Play()
-    end)
-    
-    -- Enhanced close button interactions
-    closeButton.MouseEnter:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = CONFIG.ERROR_COLOR,
-            BackgroundTransparency = 0.7
-        }):Play()
-        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 36, 0, 36)
-        }):Play()
-    end)
-    
-    closeButton.MouseLeave:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.9
-        }):Play()
-        CreateTween(closeButton, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 32, 0, 32)
-        }):Play()
-    end)
-    
-    -- Enhanced input field interactions
-    keyInputFrame.MouseEnter:Connect(function()
-        CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = Color3.fromRGB(CONFIG.INPUT_COLOR.R * 1.05, CONFIG.INPUT_COLOR.G * 1.05, CONFIG.INPUT_COLOR.B * 1.05)
-        }):Play()
-    end)
-    
-    keyInputFrame.MouseLeave:Connect(function()
-        if not keyInput:IsFocused() then
-            CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                BackgroundColor3 = CONFIG.INPUT_COLOR
-            }):Play()
-        end
-    end)
-    
+    -- Focus effects
     keyInput.Focused:Connect(function()
-        CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = Color3.fromRGB(CONFIG.INPUT_COLOR.R * 1.1, CONFIG.INPUT_COLOR.G * 1.1, CONFIG.INPUT_COLOR.B * 1.1)
-        }):Play()
-        CreateTween(keyIcon, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            ImageColor3 = CONFIG.ACCENT_COLOR
+        CreateTween(keyInputStroke, TweenInfo.new(0.15), {
+            Color = CONFIG.ACCENT_COLOR,
+            Transparency = 0
         }):Play()
     end)
     
     keyInput.FocusLost:Connect(function()
-        CreateTween(keyInputFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            BackgroundColor3 = CONFIG.INPUT_COLOR
-        }):Play()
-        CreateTween(keyIcon, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            ImageColor3 = CONFIG.SUB_TEXT_COLOR
+        CreateTween(keyInputStroke, TweenInfo.new(0.15), {
+            Color = CONFIG.BORDER_COLOR,
+            Transparency = 0.4
         }):Play()
     end)
     
-    -- Submit button functionality with enhanced feedback
-    if submitButton and submitButton:IsA("TextButton") then
-        submitButton.MouseButton1Click:Connect(function()
-            local enteredKey = keyInput.Text
-            
-            if enteredKey == "" then
-                statusLabel.Text = "Please enter a key"
-                statusLabel.TextColor3 = CONFIG.ERROR_COLOR
-                -- Shake animation for empty input
-                CreateTween(keyInputFrame, TweenInfo.new(0.1), {
-                    Position = UDim2.new(0, 23, 0, 100)
-                }):Play()
-                wait(0.1)
-                CreateTween(keyInputFrame, TweenInfo.new(0.1), {
-                    Position = UDim2.new(0, 20, 0, 100)
-                }):Play()
-                return
-            end
-            
-            -- Add loading state
-            submitButton.Text = "Validating..."
-            submitButton.AutoButtonColor = false
-            
-            -- Check if key is valid
-            local isValidKey = false
-            for _, validKey in ipairs(keySystemData.ValidKeys) do
-                if enteredKey == validKey then
-                    isValidKey = true
-                    break
-                end
-            end
-            
-            if isValidKey then
-                statusLabel.Text = "Authentication successful!"
-                statusLabel.TextColor3 = CONFIG.SUCCESS_COLOR
-                
-                -- Success animation
-                CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 440, 0, 290),
-                    Position = UDim2.new(0.5, -220, 0.5, -145)
-                }):Play()
-                
-                submitButton.Text = "✓ Success"
-                submitButton.BackgroundColor3 = CONFIG.SUCCESS_COLOR
-                
-                -- Store the valid key for future auto-verification
-                KeySystem.LastValidKey = enteredKey
-                -- Save the key to file for persistence
-                saveKey(enteredKey)
-                
-                wait(1.5)
-                
-                -- Smooth exit animation
-                CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-                    Size = UDim2.new(0, 0, 0, 0),
-                    Position = UDim2.new(0.5, 0, 0.5, 0)
-                }):Play()
-                
-                wait(0.3)
-                screenGui:Destroy()
-                callback(true)
-            else
-                statusLabel.Text = "Invalid key. Please try again."
-                statusLabel.TextColor3 = CONFIG.ERROR_COLOR
-                
-                -- Error shake animation
-                CreateTween(keyWindow, TweenInfo.new(0.08), {
-                    Position = UDim2.new(0.5, -205, 0.5, -140)
-                }):Play()
-                wait(0.08)
-                CreateTween(keyWindow, TweenInfo.new(0.08), {
-                    Position = UDim2.new(0.5, -215, 0.5, -140)
-                }):Play()
-                wait(0.08)
-                CreateTween(keyWindow, TweenInfo.new(0.08), {
-                    Position = UDim2.new(0.5, -210, 0.5, -140)
-                }):Play()
-                
-                submitButton.Text = "Authenticate"
-                submitButton.BackgroundColor3 = CONFIG.ACCENT_COLOR
-            end
-        end)
-    else
-        warn("ERROR: Submit button is not a TextButton! Type:", submitButton.ClassName)
-    end
+    -- Status label
+    local statusLabel = CreateElement("TextLabel", {
+        Name = "StatusLabel",
+        Size = UDim2.new(1, -48, 0, 18),
+        Position = UDim2.new(0, 24, 0, 210),
+        BackgroundTransparency = 1,
+        Text = "",
+        TextColor3 = CONFIG.ERROR_COLOR,
+        TextSize = 12,
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Center
+    })
+    statusLabel.Parent = keyWindow
     
-    -- Enhanced close button with cleanup
+    -- Modern submit button
+    local submitButton = CreateElement("TextButton", {
+        Name = "VortexSubmitButton",
+        Size = UDim2.new(1, -48, 0, 44),
+        Position = UDim2.new(0, 24, 0, 236),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BorderSizePixel = 0,
+        Text = "Authenticate",
+        TextColor3 = Color3.new(1, 1, 1),
+        TextSize = 14,
+        Font = Enum.Font.Montserrat,
+        AutoButtonColor = false
+    })
+    submitButton.Parent = keyWindow
+    
+    AddCorner(submitButton, CONFIG.CORNER_RADIUS)
+    
+    -- Button hover effects
+    submitButton.MouseEnter:Connect(function()
+        CreateTween(submitButton, TweenInfo.new(0.15), {
+            BackgroundColor3 = CONFIG.ACCENT_HOVER
+        }):Play()
+    end)
+    
+    submitButton.MouseLeave:Connect(function()
+        CreateTween(submitButton, TweenInfo.new(0.15), {
+            BackgroundColor3 = CONFIG.ACCENT_COLOR
+        }):Play()
+    end)
+    
+    -- Close button
+    local closeButton = CreateElement("TextButton", {
+        Name = "CloseButton",
+        Size = UDim2.new(0, 32, 0, 32),
+        Position = UDim2.new(1, -44, 0, 12),
+        BackgroundColor3 = CONFIG.PANEL_COLOR,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Text = "×",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 20,
+        Font = Enum.Font.Montserrat,
+        AutoButtonColor = false
+    })
+    closeButton.Parent = keyWindow
+    AddCorner(closeButton, UDim.new(1, 0))
+    
+    closeButton.MouseEnter:Connect(function()
+        CreateTween(closeButton, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0,
+            BackgroundColor3 = CONFIG.ERROR_COLOR
+        }):Play()
+        CreateTween(closeButton, TweenInfo.new(0.15), {
+            TextColor3 = Color3.new(1, 1, 1)
+        }):Play()
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        CreateTween(closeButton, TweenInfo.new(0.15), {
+            BackgroundTransparency = 1
+        }):Play()
+        CreateTween(closeButton, TweenInfo.new(0.15), {
+            TextColor3 = CONFIG.SUB_TEXT_COLOR
+        }):Play()
+    end)
+    
+    -- Submit functionality
+    submitButton.MouseButton1Click:Connect(function()
+        local enteredKey = keyInput.Text
+        
+        if enteredKey == "" then
+            statusLabel.Text = "Please enter a key"
+            statusLabel.TextColor3 = CONFIG.ERROR_COLOR
+            
+            -- Shake animation
+            local originalPos = keyInputFrame.Position
+            for i = 1, 3 do
+                CreateTween(keyInputFrame, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + 5, originalPos.Y.Scale, originalPos.Y.Offset)
+                }):Play()
+                task.wait(0.05)
+                CreateTween(keyInputFrame, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset - 5, originalPos.Y.Scale, originalPos.Y.Offset)
+                }):Play()
+                task.wait(0.05)
+            end
+            CreateTween(keyInputFrame, TweenInfo.new(0.05), {
+                Position = originalPos
+            }):Play()
+            return
+        end
+        
+        submitButton.Text = "Validating..."
+        
+        local isValidKey = false
+        for _, validKey in ipairs(keySystemData.ValidKeys) do
+            if enteredKey == validKey then
+                isValidKey = true
+                break
+            end
+        end
+        
+        if isValidKey then
+            statusLabel.Text = "✓ Authentication successful!"
+            statusLabel.TextColor3 = CONFIG.SUCCESS_COLOR
+            
+            CreateTween(submitButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = CONFIG.SUCCESS_COLOR
+            }):Play()
+            submitButton.Text = "Success!"
+            
+            KeySystem.LastValidKey = enteredKey
+            saveKey(enteredKey)
+            
+            task.wait(1)
+            
+            CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 0, 0, 0),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BackgroundTransparency = 1
+            }):Play()
+            
+            CreateTween(overlay, TweenInfo.new(0.3), {
+                BackgroundTransparency = 1
+            }):Play()
+            
+            task.wait(0.3)
+            screenGui:Destroy()
+            callback(true)
+        else
+            statusLabel.Text = "Invalid key. Please try again."
+            statusLabel.TextColor3 = CONFIG.ERROR_COLOR
+            
+            -- Shake animation
+            local originalPos = keyWindow.Position
+            for i = 1, 2 do
+                CreateTween(keyWindow, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + 8, originalPos.Y.Scale, originalPos.Y.Offset)
+                }):Play()
+                task.wait(0.05)
+                CreateTween(keyWindow, TweenInfo.new(0.05), {
+                    Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset - 8, originalPos.Y.Scale, originalPos.Y.Offset)
+                }):Play()
+                task.wait(0.05)
+            end
+            CreateTween(keyWindow, TweenInfo.new(0.05), {
+                Position = originalPos
+            }):Play()
+            
+            submitButton.Text = "Authenticate"
+            CreateTween(submitButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = CONFIG.ACCENT_COLOR
+            }):Play()
+        end
+    end)
+    
     closeButton.MouseButton1Click:Connect(function()
-        -- Smooth exit animation
         CreateTween(keyWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
-            Position = UDim2.new(0.5, 0, 0.5, 0)
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundTransparency = 1
         }):Play()
         
-        wait(0.3)
+        CreateTween(overlay, TweenInfo.new(0.3), {
+            BackgroundTransparency = 1
+        }):Play()
+        
+        task.wait(0.3)
         screenGui:Destroy()
         callback(false)
     end)
     
-    -- Allow Enter key to submit with enhanced feedback
     keyInput.FocusLost:Connect(function(enterPressed)
         if enterPressed then
-            if submitButton and submitButton:IsA("TextButton") then
-                submitButton.MouseButton1Click:Fire()
-            end
+            submitButton.MouseButton1Click:Fire()
         end
     end)
-    
-    -- No blur effect cleanup needed (glow removed)
 end
 
--- Export
+-- =============================================================================
+-- GAMIFICATION SYSTEM
+-- =============================================================================
+
+-- Gamification configuration
+local GamificationConfig = {
+    enabled = false,
+    endpoint = nil,
+    notifications = true,
+    secretKey = "vortex_secret_key_2024"
+}
+
+-- Configure gamification system
+function VortexUI.ConfigureGamification(config)
+    GamificationConfig.enabled = config.enabled or false
+    GamificationConfig.endpoint = config.endpoint or nil
+    GamificationConfig.notifications = config.notifications ~= false
+end
+
+-- Get unique user identifier
+function VortexUI.GetUserID()
+    local player = game.Players.LocalPlayer
+    return player and player.UserId or "guest_" .. tick()
+end
+
+-- Claim points for script usage
+function VortexUI.ClaimPoints(scriptName)
+    if not GamificationConfig.enabled or not GamificationConfig.endpoint then
+        return false
+    end
+    
+    local HttpService = game:GetService("HttpService")
+    local userID = VortexUI.GetUserID()
+    
+    local payload = HttpService:JSONEncode({
+        user_id = userID,
+        script_name = scriptName,
+        timestamp = os.time()
+    })
+    
+    local success, response = pcall(function()
+        return HttpService:PostAsync(
+            GamificationConfig.endpoint .. "/claim",
+            payload,
+            Enum.HttpContentType.ApplicationJson,
+            false,
+            {
+                ["Authorization"] = "Bearer " .. GamificationConfig.secretKey,
+                ["Content-Type"] = "application/json"
+            }
+        )
+    end)
+    
+    if success then
+        if GamificationConfig.notifications then
+            VortexUI.ShowNotification("Points Awarded!", "You earned points for using " .. scriptName, "success")
+        end
+        return true
+    else
+        warn("Failed to claim points:", response)
+        return false
+    end
+end
+
+-- Get cooldown remaining for a script
+function VortexUI.GetCooldownRemaining(scriptName)
+    -- This would typically check with the server
+    -- For now, return 0 (no cooldown)
+    return 0
+end
+
+-- Format cooldown time for display
+function VortexUI.FormatCooldown(seconds)
+    if seconds <= 0 then
+        return "Available"
+    elseif seconds < 60 then
+        return math.floor(seconds) .. "s"
+    elseif seconds < 3600 then
+        return math.floor(seconds / 60) .. "m"
+    else
+        return math.floor(seconds / 3600) .. "h"
+    end
+end
+
+-- =============================================================================
+-- DISCORD INTEGRATION
+-- =============================================================================
+
+-- Check if Discord account is linked
+function VortexUI.IsDiscordLinked()
+    if not GamificationConfig.enabled or not GamificationConfig.endpoint then
+        return false, nil
+    end
+    
+    local HttpService = game:GetService("HttpService")
+    local userID = VortexUI.GetUserID()
+    
+    local success, response = pcall(function()
+        return HttpService:GetAsync(
+            GamificationConfig.endpoint .. "/user/" .. userID .. "/discord-status",
+            false,
+            {
+                ["Authorization"] = "Bearer " .. GamificationConfig.secretKey
+            }
+        )
+    end)
+    
+    if success then
+        local data = HttpService:JSONDecode(response)
+        return data.linked or false, data.username or nil
+    else
+        return false, nil
+    end
+end
+
+-- Link Discord account with code
+function VortexUI.LinkDiscordWithCode(code)
+    if not GamificationConfig.enabled or not GamificationConfig.endpoint then
+        return false, "Gamification not configured"
+    end
+    
+    local HttpService = game:GetService("HttpService")
+    local userID = VortexUI.GetUserID()
+    
+    local payload = HttpService:JSONEncode({
+        code = code,
+        user_id = userID
+    })
+    
+    local success, response = pcall(function()
+        return HttpService:PostAsync(
+            GamificationConfig.endpoint .. "/link-discord",
+            payload,
+            Enum.HttpContentType.ApplicationJson,
+            false,
+            {
+                ["Authorization"] = "Bearer " .. GamificationConfig.secretKey,
+                ["Content-Type"] = "application/json"
+            }
+        )
+    end)
+    
+    if success then
+        local data = HttpService:JSONDecode(response)
+        return data.success or false, data.message or "Unknown error"
+    else
+        return false, "Failed to connect to server"
+    end
+end
+
+-- Create Discord linking UI
+function VortexUI.CreateDiscordLinkUI(parentWindow, position)
+    local linkingFrame = CreateElement("Frame", {
+        Name = "DiscordLinking",
+        Size = UDim2.new(1, -32, 0, 120),
+        Position = position or UDim2.new(0, 16, 0, 0),
+        BackgroundColor3 = CONFIG.PANEL_COLOR,
+        BorderSizePixel = 0
+    })
+    
+    AddCorner(linkingFrame, CONFIG.CORNER_RADIUS)
+    
+    local titleLabel = CreateElement("TextLabel", {
+        Name = "Title",
+        Size = UDim2.new(1, -32, 0, 20),
+        Position = UDim2.new(0, 16, 0, 12),
+        BackgroundTransparency = 1,
+        Text = "🔗 Discord Integration",
+        TextColor3 = CONFIG.TEXT_COLOR,
+        TextSize = 14,
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    titleLabel.Parent = linkingFrame
+    
+    local descLabel = CreateElement("TextLabel", {
+        Name = "Description",
+        Size = UDim2.new(1, -32, 0, 40),
+        Position = UDim2.new(0, 16, 0, 36),
+        BackgroundTransparency = 1,
+        Text = "Link your Discord account to unlock rewards\nand track your progress!",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 12,
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextWrapped = true
+    })
+    descLabel.Parent = linkingFrame
+    
+    local linkButton = CreateElement("TextButton", {
+        Name = "LinkButton",
+        Size = UDim2.new(0, 120, 0, 32),
+        Position = UDim2.new(0, 16, 0, 80),
+        BackgroundColor3 = CONFIG.ACCENT_COLOR,
+        BorderSizePixel = 0,
+        Text = "Link Discord",
+        TextColor3 = Color3.new(1, 1, 1),
+        TextSize = 12,
+        Font = Enum.Font.Montserrat,
+        AutoButtonColor = false
+    })
+    linkButton.Parent = linkingFrame
+    AddCorner(linkButton, CONFIG.CORNER_RADIUS_SM)
+    
+    linkButton.MouseButton1Click:Connect(function()
+        local userID = VortexUI.GetUserID()
+        VortexUI.ShowNotification(
+            "Discord Linking",
+            "Type !link in Discord to get your code!\nYour User ID: " .. string.sub(userID, 1, 8) .. "...",
+            "info"
+        )
+    end)
+    
+    return linkingFrame
+end
+
+-- =============================================================================
+-- NOTIFICATION SYSTEM
+-- =============================================================================
+
+-- Show notification to user
+function VortexUI.ShowNotification(title, message, type)
+    type = type or "info"
+    
+    local CoreGui = game:GetService("CoreGui")
+    local notificationGui = CreateElement("ScreenGui", {
+        Name = "VortexNotification_" .. tick(),
+        IgnoreGuiInset = true,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    })
+    notificationGui.Parent = CoreGui
+    
+    -- Determine colors based on type
+    local bgColor, iconColor
+    if type == "success" then
+        bgColor = CONFIG.SUCCESS_COLOR
+        iconColor = CONFIG.SUCCESS_GLOW
+    elseif type == "error" then
+        bgColor = CONFIG.ERROR_COLOR
+        iconColor = CONFIG.ERROR_GLOW
+    elseif type == "warning" then
+        bgColor = CONFIG.WARNING_COLOR
+        iconColor = CONFIG.WARNING_COLOR
+    else
+        bgColor = CONFIG.ACCENT_COLOR
+        iconColor = CONFIG.ACCENT_GLOW
+    end
+    
+    local notification = CreateElement("Frame", {
+        Name = "Notification",
+        Size = UDim2.new(0, 320, 0, 80),
+        Position = UDim2.new(1, 340, 0, 100),
+        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
+        BorderSizePixel = 0
+    })
+    notification.Parent = notificationGui
+    AddCorner(notification, CONFIG.CORNER_RADIUS)
+    AddStroke(notification, 1, bgColor, 0.8)
+    
+    -- Icon
+    local icon = CreateElement("Frame", {
+        Name = "Icon",
+        Size = UDim2.new(0, 40, 0, 40),
+        Position = UDim2.new(0, 16, 0.5, -20),
+        BackgroundColor3 = bgColor,
+        BorderSizePixel = 0
+    })
+    icon.Parent = notification
+    AddCorner(icon, UDim.new(0, 20))
+    
+    local iconLabel = CreateElement("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = type == "success" and "✓" or type == "error" and "✕" or "ℹ",
+        TextColor3 = Color3.new(1, 1, 1),
+        TextSize = 20,
+        Font = Enum.Font.Montserrat
+    })
+    iconLabel.Parent = icon
+    
+    -- Title
+    local titleLabel = CreateElement("TextLabel", {
+        Name = "Title",
+        Size = UDim2.new(1, -80, 0, 20),
+        Position = UDim2.new(0, 72, 0, 16),
+        BackgroundTransparency = 1,
+        Text = title or "Notification",
+        TextColor3 = CONFIG.TEXT_COLOR,
+        TextSize = 14,
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    titleLabel.Parent = notification
+    
+    -- Message
+    local messageLabel = CreateElement("TextLabel", {
+        Name = "Message",
+        Size = UDim2.new(1, -80, 0, 40),
+        Position = UDim2.new(0, 72, 0, 32),
+        BackgroundTransparency = 1,
+        Text = message or "",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = 12,
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextWrapped = true
+    })
+    messageLabel.Parent = notification
+    
+    -- Animate in
+    CreateTween(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+        Position = UDim2.new(1, -340, 0, 100)
+    }):Play()
+    
+    -- Auto remove after 5 seconds
+    task.spawn(function()
+        task.wait(5)
+        if notificationGui and notificationGui.Parent then
+            CreateTween(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Position = UDim2.new(1, 340, 0, 100)
+            }):Play()
+            task.wait(0.3)
+            notificationGui:Destroy()
+        end
+    end)
+end
+
 return VortexUI
+
