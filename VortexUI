@@ -7,10 +7,6 @@ local player = game.Players.LocalPlayer
 -- Load Icons module
 local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"))()
 
--- =============================================================================
--- CONFIGURATION & DESIGN SYSTEM
--- =============================================================================
-
 -- Modernized color palette with better contrast and depth
 local CONFIG = {
     -- Base colors - deeper, richer tones
@@ -54,10 +50,7 @@ local CONFIG = {
     SHADOW_TRANSPARENCY = 0.6
 }
 
--- =============================================================================
--- RESPONSIVE DESIGN SYSTEM
--- =============================================================================
-
+-- Responsive Design System
 local Responsive = {
     Breakpoints = {
         Mobile = { Width = 768, Height = 1024 },
@@ -118,10 +111,6 @@ local function GetResponsiveFontSize(baseSize)
     return math.max(10, GetResponsiveSize(baseSize, "Font"))
 end
 
--- =============================================================================
--- STATE MANAGEMENT
--- =============================================================================
-
 -- Storage for elements and their states
 local Elements = {}
 local ToggleStates = {}
@@ -133,10 +122,6 @@ local KeySystem = {
     LastValidKey = nil
 }
 
--- =============================================================================
--- CLEANUP SYSTEM
--- =============================================================================
-
 -- Cleanup system for stopping operations when UI is destroyed
 local CleanupManager = {
     ActiveConnections = {},
@@ -145,83 +130,7 @@ local CleanupManager = {
     CleanupCallbacks = {}
 }
 
-local function TrackConnection(connection, window)
-    if not CleanupManager.ActiveConnections[window] then
-        CleanupManager.ActiveConnections[window] = {}
-    end
-    table.insert(CleanupManager.ActiveConnections[window], connection)
-    return connection
-end
-
-local function TrackLoop(loopFunction, window, loopName)
-    if not CleanupManager.ActiveLoops[window] then
-        CleanupManager.ActiveLoops[window] = {}
-    end
-    CleanupManager.ActiveLoops[window][loopName] = loopFunction
-end
-
-local function TrackToggle(toggleCallback, window, toggleName)
-    if not CleanupManager.ActiveToggles[window] then
-        CleanupManager.ActiveToggles[window] = {}
-    end
-    CleanupManager.ActiveToggles[window][toggleName] = toggleCallback
-end
-
-local function AddCleanupCallback(callback, window)
-    if not CleanupManager.CleanupCallbacks[window] then
-        CleanupManager.CleanupCallbacks[window] = {}
-    end
-    table.insert(CleanupManager.CleanupCallbacks[window], callback)
-end
-
-local function CleanupWindow(window)
-    if CleanupManager.ActiveConnections[window] then
-        for _, connection in ipairs(CleanupManager.ActiveConnections[window]) do
-            if connection and connection.Disconnect then
-                connection:Disconnect()
-            end
-        end
-        CleanupManager.ActiveConnections[window] = {}
-    end
-    
-    if CleanupManager.ActiveLoops[window] then
-        for loopName, loopFunction in pairs(CleanupManager.ActiveLoops[window]) do
-            if type(loopFunction) == "function" then
-                pcall(loopFunction, false)
-            end
-        end
-        CleanupManager.ActiveLoops[window] = {}
-    end
-    
-    if CleanupManager.ActiveToggles[window] then
-        for toggleName, toggleCallback in pairs(CleanupManager.ActiveToggles[window]) do
-            if type(toggleCallback) == "function" then
-                pcall(toggleCallback, false)
-            end
-        end
-        CleanupManager.ActiveToggles[window] = {}
-    end
-    
-    if CleanupManager.CleanupCallbacks[window] then
-        for _, callback in ipairs(CleanupManager.CleanupCallbacks[window]) do
-            if type(callback) == "function" then
-                pcall(callback)
-            end
-        end
-        CleanupManager.CleanupCallbacks[window] = {}
-    end
-    
-    for flag in pairs(ToggleStates) do
-        if type(ToggleStates[flag]) == "boolean" then
-            ToggleStates[flag] = false
-        end
-    end
-end
-
--- =============================================================================
--- UTILITY FUNCTIONS
--- =============================================================================
-
+-- Utility Functions
 local function CreateElement(elementType, properties)
     local element = Instance.new(elementType)
     for prop, value in pairs(properties) do
@@ -303,9 +212,79 @@ local function CreateTween(object, info, properties)
     return TweenService:Create(object, info, properties)
 end
 
--- =============================================================================
--- MAIN WINDOW SYSTEM
--- =============================================================================
+-- Cleanup Manager Functions
+local function TrackConnection(connection, window)
+    if not CleanupManager.ActiveConnections[window] then
+        CleanupManager.ActiveConnections[window] = {}
+    end
+    table.insert(CleanupManager.ActiveConnections[window], connection)
+    return connection
+end
+
+local function TrackLoop(loopFunction, window, loopName)
+    if not CleanupManager.ActiveLoops[window] then
+        CleanupManager.ActiveLoops[window] = {}
+    end
+    CleanupManager.ActiveLoops[window][loopName] = loopFunction
+end
+
+local function TrackToggle(toggleCallback, window, toggleName)
+    if not CleanupManager.ActiveToggles[window] then
+        CleanupManager.ActiveToggles[window] = {}
+    end
+    CleanupManager.ActiveToggles[window][toggleName] = toggleCallback
+end
+
+local function AddCleanupCallback(callback, window)
+    if not CleanupManager.CleanupCallbacks[window] then
+        CleanupManager.CleanupCallbacks[window] = {}
+    end
+    table.insert(CleanupManager.CleanupCallbacks[window], callback)
+end
+
+local function CleanupWindow(window)
+    if CleanupManager.ActiveConnections[window] then
+        for _, connection in ipairs(CleanupManager.ActiveConnections[window]) do
+            if connection and connection.Disconnect then
+                connection:Disconnect()
+            end
+        end
+        CleanupManager.ActiveConnections[window] = {}
+    end
+    
+    if CleanupManager.ActiveLoops[window] then
+        for loopName, loopFunction in pairs(CleanupManager.ActiveLoops[window]) do
+            if type(loopFunction) == "function" then
+                pcall(loopFunction, false)
+            end
+        end
+        CleanupManager.ActiveLoops[window] = {}
+    end
+    
+    if CleanupManager.ActiveToggles[window] then
+        for toggleName, toggleCallback in pairs(CleanupManager.ActiveToggles[window]) do
+            if type(toggleCallback) == "function" then
+                pcall(toggleCallback, false)
+            end
+        end
+        CleanupManager.ActiveToggles[window] = {}
+    end
+    
+    if CleanupManager.CleanupCallbacks[window] then
+        for _, callback in ipairs(CleanupManager.CleanupCallbacks[window]) do
+            if type(callback) == "function" then
+                pcall(callback)
+            end
+        end
+        CleanupManager.CleanupCallbacks[window] = {}
+    end
+    
+    for flag in pairs(ToggleStates) do
+        if type(ToggleStates[flag]) == "boolean" then
+            ToggleStates[flag] = false
+        end
+    end
+end
 
 -- Main Window Creation
 function VortexUI:CreateWindow(options)
@@ -396,24 +375,6 @@ function VortexUI:CreateWindow(options)
     
     -- Remove border from main frame
     -- local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
-    
-    -- Resize Handle
-    local resizeHandle = CreateElement("Frame", {
-        Name = "ResizeHandle",
-        Size = GetResponsiveUDim2(UDim2.new(0, 20, 0, 20)),
-        Position = UDim2.new(1, -20, 1, -20),
-        BackgroundColor3 = CONFIG.ACCENT_COLOR,
-        BackgroundTransparency = 0.7,
-        BorderSizePixel = 0,
-        ZIndex = 1000
-    })
-    resizeHandle.Parent = mainFrame
-    AddCorner(resizeHandle, UDim.new(0, GetResponsiveSize(4)))
-    
-    -- Resize handle hover effect
-    local isResizing = false
-    local resizeStartPos = nil
-    local resizeStartSize = nil
     
     -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
@@ -529,14 +490,13 @@ function VortexUI:CreateWindow(options)
     minimizeButton.Parent = controlsContainer
     AddCorner(minimizeButton, UDim.new(0, GetResponsiveSize(8)))
     
-    local minimizeIcon = CreateElement("ImageLabel", {
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0.5, -8, 0.5, -8),
+    local minimizeIcon = CreateElement("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
-        Image = Icons["minimize-2"] or "rbxassetid://116269596042539",
-        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
-        ImageTransparency = 0,
-        ScaleType = Enum.ScaleType.Fit
+        Text = "−",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = GetResponsiveFontSize(20),
+        Font = Enum.Font.Montserrat
     })
     minimizeIcon.Parent = minimizeButton
     
@@ -554,14 +514,13 @@ function VortexUI:CreateWindow(options)
     closeButton.Parent = controlsContainer
     AddCorner(closeButton, UDim.new(0, GetResponsiveSize(8)))
     
-    local closeIcon = CreateElement("ImageLabel", {
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0.5, -8, 0.5, -8),
+    local closeIcon = CreateElement("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
-        Image = Icons["circle-x"] or "rbxassetid://76821953846248",
-        ImageColor3 = CONFIG.SUB_TEXT_COLOR,
-        ImageTransparency = 0,
-        ScaleType = Enum.ScaleType.Fit
+        Text = "×",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = GetResponsiveFontSize(22),
+        Font = Enum.Font.Montserrat
     })
     closeIcon.Parent = closeButton
     
@@ -571,7 +530,7 @@ function VortexUI:CreateWindow(options)
             BackgroundTransparency = 0
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            ImageColor3 = CONFIG.TEXT_COLOR
+            TextColor3 = CONFIG.TEXT_COLOR
         }):Play()
     end)
     
@@ -580,25 +539,27 @@ function VortexUI:CreateWindow(options)
             BackgroundTransparency = 1
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            ImageColor3 = CONFIG.SUB_TEXT_COLOR
+            TextColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
     closeButton.MouseEnter:Connect(function()
         CreateTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-            BackgroundTransparency = 0
+            BackgroundTransparency = 0,
+            BackgroundColor3 = CONFIG.ERROR_COLOR
         }):Play()
         CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            ImageColor3 = CONFIG.TEXT_COLOR
+            TextColor3 = CONFIG.TEXT_COLOR
         }):Play()
     end)
     
     closeButton.MouseLeave:Connect(function()
         CreateTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-            BackgroundTransparency = 1
+            BackgroundTransparency = 1,
+            BackgroundColor3 = CONFIG.INPUT_COLOR
         }):Play()
         CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
-            ImageColor3 = CONFIG.SUB_TEXT_COLOR
+            TextColor3 = CONFIG.SUB_TEXT_COLOR
         }):Play()
     end)
     
@@ -729,13 +690,9 @@ function VortexUI:CreateWindow(options)
             
             if contentArea then contentArea.Visible = false end
             if sidebarFrame then sidebarFrame.Visible = false end
-            if resizeHandle then resizeHandle.Visible = false end
             
             headerBar.Size = UDim2.new(1, 0, 1, 0)
             titleLabel.Visible = false
-            
-            -- Update icon to expand when minimized
-            minimizeIcon.Image = Icons["expand"] or "rbxassetid://137492887754537"
         else
             local restoredPos = keepInBounds(originalPosition, originalSize)
             
@@ -748,7 +705,7 @@ function VortexUI:CreateWindow(options)
             
             -- Animate background frame for restored state
             local backgroundTween = TweenService:Create(backgroundFrame, tweenInfo, {
-                Size = UDim2.new(0, originalSize.X.Offset + backgroundOffset, 0, originalSize.Y.Offset + backgroundOffset),
+                Size = UDim2.new(0, windowSize.X.Offset + backgroundOffset, 0, windowSize.Y.Offset + backgroundOffset),
                 Position = UDim2.new(restoredPos.X.Scale, restoredPos.X.Offset - GetResponsiveSize(5), restoredPos.Y.Scale, restoredPos.Y.Offset - GetResponsiveSize(5))
             })
             backgroundTween:Play()
@@ -763,13 +720,9 @@ function VortexUI:CreateWindow(options)
             if contentArea then contentArea.Visible = true end
             if sidebarFrame then sidebarFrame.Visible = true end
             if titleLabel then titleLabel.Visible = true end
-            if resizeHandle then resizeHandle.Visible = true end
             
             headerBar.Size = UDim2.new(1, 0, 0, GetResponsiveSize(56))
             originalPosition = restoredPos
-            
-            -- Update icon to minimize-2 when restored
-            minimizeIcon.Image = Icons["minimize-2"] or "rbxassetid://116269596042539"
         end
     end
     
@@ -798,8 +751,6 @@ function VortexUI:CreateWindow(options)
             boundedPosition.Y.Scale, 
             boundedPosition.Y.Offset - backgroundOffset
         )
-        -- Update background frame size to match main frame
-        backgroundFrame.Size = UDim2.new(0, (isMinimized and minimizedSize or mainFrame.Size).X.Offset + backgroundOffset, 0, (isMinimized and minimizedSize or mainFrame.Size).Y.Offset + backgroundOffset)
     end
     
     local function handleDragStart(input)
@@ -832,96 +783,6 @@ function VortexUI:CreateWindow(options)
     
     setupDrag(headerBar)
     setupDrag(logoFrame)
-    
-    -- Resize functionality
-    local function handleResizeStart(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isResizing = true
-            resizeStartPos = input.Position
-            resizeStartSize = mainFrame.Size
-            
-            -- Visual feedback
-            CreateTween(resizeHandle, TweenInfo.new(0.1), {
-                BackgroundTransparency = 0.3
-            }):Play()
-        end
-    end
-    
-    local function handleResizeChanged(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and isResizing then
-            local delta = input.Position - resizeStartPos
-            local newSize = UDim2.new(
-                resizeStartSize.X.Scale,
-                math.max(GetResponsiveSize(300), resizeStartSize.X.Offset + delta.X),
-                resizeStartSize.Y.Scale,
-                math.max(GetResponsiveSize(200), resizeStartSize.Y.Offset + delta.Y)
-            )
-            
-            -- Apply new size with bounds checking
-            local viewportSize = workspace.CurrentCamera.ViewportSize
-            local maxX = viewportSize.X - newSize.X.Offset
-            local maxY = viewportSize.Y - newSize.Y.Offset
-            
-            local boundedSize = UDim2.new(
-                newSize.X.Scale,
-                math.min(newSize.X.Offset, maxX),
-                newSize.Y.Scale,
-                math.min(newSize.Y.Offset, maxY)
-            )
-            
-            mainFrame.Size = boundedSize
-            
-            -- Update background frame to always match main frame
-            if backgroundFrame then
-                backgroundFrame.Size = UDim2.new(0, mainFrame.Size.X.Offset + backgroundOffset, 0, mainFrame.Size.Y.Offset + backgroundOffset)
-                backgroundFrame.Position = UDim2.new(0.5, -(mainFrame.Size.X.Offset + backgroundOffset)/2, 0.5, -(mainFrame.Size.Y.Offset + backgroundOffset)/2)
-            end
-            
-            -- Update resize handle position to stay in corner
-            resizeHandle.Position = UDim2.new(1, -20, 1, -20)
-        end
-    end
-    
-    local function handleResizeEnd(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isResizing = false
-            resizeStartPos = nil
-            resizeStartSize = nil
-            
-            -- Restore visual feedback
-            CreateTween(resizeHandle, TweenInfo.new(0.1), {
-                BackgroundTransparency = 0.7
-            }):Play()
-            
-            if not isMinimized then
-                originalSize = mainFrame.Size
-                originalPosition = mainFrame.Position
-            end
-        end
-    end
-    
-    local function setupResize(element)
-        element.InputBegan:Connect(handleResizeStart)
-        element.InputChanged:Connect(handleResizeChanged)
-        element.InputEnded:Connect(handleResizeEnd)
-    end
-    
-    setupResize(resizeHandle)
-    
-    -- Resize handle hover effect
-    resizeHandle.MouseEnter:Connect(function()
-        CreateTween(resizeHandle, TweenInfo.new(0.15), {
-            BackgroundTransparency = 0.4
-        }):Play()
-    end)
-    
-    resizeHandle.MouseLeave:Connect(function()
-        if not isResizing then
-            CreateTween(resizeHandle, TweenInfo.new(0.15), {
-                BackgroundTransparency = 0.7
-            }):Play()
-        end
-    end)
     
     local dragConnection = UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
@@ -1031,10 +892,6 @@ function VortexUI:CreateWindow(options)
     }
     
     -- Window methods
-    -- =============================================================================
-    -- TAB SYSTEM
-    -- =============================================================================
-    
     function window:CreateTab(options)
         local tabName = options.Name or "New Tab"
         local iconName = options.Icon
@@ -1260,10 +1117,6 @@ function VortexUI:CreateWindow(options)
             Elements = {}
         }
         
-        -- =============================================================================
-        -- UI ELEMENTS - BASIC CONTROLS
-        -- =============================================================================
-        
         -- Enhanced Button with modern styling
         function tab:CreateButton(options)
             local buttonName = options.Name or "Button"
@@ -1337,10 +1190,6 @@ function VortexUI:CreateWindow(options)
             end
             return element
         end
-        
-        -- =============================================================================
-        -- UI ELEMENTS - DISPLAY & LAYOUT
-        -- =============================================================================
         
         function tab:CreateSection(title)
             local sectionFrame = CreateElement("Frame", {
@@ -1503,10 +1352,6 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
-        -- =============================================================================
-        -- UI ELEMENTS - INTERACTIVE CONTROLS
-        -- =============================================================================
-        
         -- Enhanced Toggle with modern pill design
         function tab:CreateToggle(options)
             local toggleName = options.Name or "Toggle"
@@ -1568,7 +1413,7 @@ function VortexUI:CreateWindow(options)
             })
             toggleIndicator.Parent = toggleButton
             
-            AddCorner(toggleIndicator, UDim.new(0, math.min(13, toggleButton.AbsoluteSize.Y/2)))
+            AddCorner(toggleIndicator, UDim.new(1, 0))
             
             ToggleStates[flag] = currentValue
             TrackToggle(callback, window, toggleName)
@@ -1729,7 +1574,7 @@ function VortexUI:CreateWindow(options)
             })
             sliderButton.Parent = sliderTrack
             
-            AddCorner(sliderButton, UDim.new(0, math.min(20, sliderTrack.AbsoluteSize.Y/2)))
+            AddCorner(sliderButton, UDim.new(1, 0))
             
             -- Thumb glow
             local thumbGlow = CreateElement("Frame", {
@@ -1743,7 +1588,7 @@ function VortexUI:CreateWindow(options)
                 ZIndex = sliderButton.ZIndex - 1
             })
             thumbGlow.Parent = sliderButton
-            AddCorner(thumbGlow, UDim.new(0, math.min(24, sliderTrack.AbsoluteSize.Y/2 + 4)))
+            AddCorner(thumbGlow, UDim.new(1, 0))
             
             ToggleStates[flag] = currentValue
             
@@ -1874,7 +1719,7 @@ function VortexUI:CreateWindow(options)
                 Position = UDim2.new(0, 14, 0, 0),
                 BackgroundTransparency = 1,
                 Text = currentOption or "Select option...",
-                TextColor3 = CONFIG.TEXT_COLOR,
+                TextColor3 = currentOption and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR,
                 TextSize = 13,
                 Font = Enum.Font.Montserrat,
                 TextXAlignment = Enum.TextXAlignment.Left,
@@ -1959,10 +1804,10 @@ function VortexUI:CreateWindow(options)
                 if multipleOptions then
                     local text = #selectedOptions > 0 and table.concat(selectedOptions, ", ") or "Select options..."
                     selectedText.Text = text
-                    selectedText.TextColor3 = CONFIG.TEXT_COLOR
+                    selectedText.TextColor3 = #selectedOptions > 0 and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR
                 else
                     selectedText.Text = selectedOptions or "Select option..."
-                    selectedText.TextColor3 = CONFIG.TEXT_COLOR
+                    selectedText.TextColor3 = selectedOptions and CONFIG.TEXT_COLOR or CONFIG.MUTED_COLOR
                 end
             end
             
@@ -2000,41 +1845,13 @@ function VortexUI:CreateWindow(options)
                     optionsListFrame.Size = UDim2.new(1, -32, 0, 0)
                     optionsListFrame.BackgroundTransparency = 1
                     
-                    dropdownFrame.ZIndex = 1000
-                    optionsListFrame.ZIndex = 1001
-                    label.ZIndex = 1002
-                    dropdownButton.ZIndex = 1002
-                    selectedText.ZIndex = 1003
-                    chevronContainer.ZIndex = 1003
-                    chevron.ZIndex = 1004
-                    
-                    -- Ensure dropdown can extend beyond content area
-                    local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
-                    if contentArea then
-                        contentArea.ClipsDescendants = false
-                        
-                        -- Position dropdown relative to its parent, not screen space
-                        optionsListFrame.Position = UDim2.new(0, 16, 1, 4)
-                        
-                        local dropdownBottom = dropdownFrame.AbsolutePosition.Y + dropdownFrame.AbsoluteSize.Y + openHeight
-                        local contentBottom = contentArea.AbsolutePosition.Y + contentArea.AbsoluteSize.Y
-                        local contentTop = contentArea.AbsolutePosition.Y
-                        
-                        -- If dropdown would go below visible area, scroll to make it visible
-                        if dropdownBottom > contentBottom then
-                            local extraSpace = dropdownBottom - contentBottom
-                            local currentScroll = contentArea.CanvasPosition.Y
-                            local newScroll = math.min(currentScroll + extraSpace + 10, contentArea.CanvasSize.Y - contentArea.AbsoluteSize.Y)
-                            contentArea.CanvasPosition = Vector2.new(0, newScroll)
-                        end
-                        
-                        -- If dropdown would go above visible area, scroll up
-                        if dropdownFrame.AbsolutePosition.Y < contentTop then
-                            local currentScroll = contentArea.CanvasPosition.Y
-                            local newScroll = math.max(currentScroll - (contentTop - dropdownFrame.AbsolutePosition.Y) - 10, 0)
-                            contentArea.CanvasPosition = Vector2.new(0, newScroll)
-                        end
-                    end
+                    dropdownFrame.ZIndex = 100
+                    optionsListFrame.ZIndex = 101
+                    label.ZIndex = 102
+                    dropdownButton.ZIndex = 102
+                    selectedText.ZIndex = 103
+                    chevronContainer.ZIndex = 103
+                    chevron.ZIndex = 104
                     
                     CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, -32, 0, openHeight),
@@ -2083,18 +1900,6 @@ function VortexUI:CreateWindow(options)
                             selectedText.ZIndex = 32
                             chevronContainer.ZIndex = 32
                             chevron.ZIndex = 33
-                            
-                            -- Restore ClipsDescendants on content area
-                            local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
-                            if contentArea then
-                                contentArea.ClipsDescendants = true
-                            end
-                            
-                            -- Restore ZIndex on content area
-                            local contentArea = dropdownFrame:FindFirstAncestorWhichIsA("ScrollingFrame")
-                            if contentArea then
-                                contentArea.ZIndex = 1
-                            end
                         end
                     end)
                 end
@@ -2139,7 +1944,7 @@ function VortexUI:CreateWindow(options)
                     Position = UDim2.new(1, -24, 0.5, -8),
                     BackgroundTransparency = 1,
                     Text = "✓",
-                    TextColor3 = Color3.new(1, 1, 1),
+                    TextColor3 = CONFIG.ACCENT_COLOR,
                     TextSize = 12,
                     Font = Enum.Font.Montserrat,
                     Visible = isSelected,
@@ -2153,8 +1958,9 @@ function VortexUI:CreateWindow(options)
                         BackgroundTransparency = selected and 0.85 or 0
                     }):Play()
                     CreateTween(optionLabel, TweenInfo.new(0.15), {
-                        TextColor3 = selected and Color3.new(1, 1, 1) or CONFIG.TEXT_COLOR
+                        TextColor3 = selected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
+                    optionLabel.Font = selected and Enum.Font.Montserrat or Enum.Font.Montserrat
                     checkmark.Visible = selected
                 end
                 
@@ -2173,15 +1979,8 @@ function VortexUI:CreateWindow(options)
                         -- Update all options
                         for _, child in pairs(optionsListFrame:GetChildren()) do
                             if child:IsA("TextButton") then
-                                local childLabel = child:FindFirstChildWhichIsA("TextLabel")
+                                local childLabel = child:FindFirstChild("TextLabel")
                                 local childCheck = child:FindFirstChildWhichIsA("TextLabel", true)
-                                -- Find the checkmark by looking for the one with "✓" text
-                                for _, grandChild in pairs(child:GetChildren()) do
-                                    if grandChild:IsA("TextLabel") and grandChild.Text == "✓" then
-                                        childCheck = grandChild
-                                        break
-                                    end
-                                end
                                 if childCheck and childCheck.Text == "✓" then
                                     childCheck.Visible = false
                                 end
@@ -2193,6 +1992,7 @@ function VortexUI:CreateWindow(options)
                                     CreateTween(childLabel, TweenInfo.new(0.15), {
                                         TextColor3 = CONFIG.TEXT_COLOR
                                     }):Play()
+                                    childLabel.Font = Enum.Font.Montserrat
                                 end
                             end
                         end
@@ -2427,10 +2227,6 @@ function VortexUI:CreateWindow(options)
     
     return window
 end
-
--- =============================================================================
--- KEY SYSTEM & AUTHENTICATION
--- =============================================================================
 
 -- Enhanced Key System Window with modern design
 function VortexUI:ShowKeyWindow(callback, keySystemData)
@@ -2886,333 +2682,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     keyInput.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             submitButton.MouseButton1Click:Fire()
-        end
-    end)
-end
-
--- =============================================================================
--- GAMIFICATION SYSTEM
--- =============================================================================
-
--- Gamification configuration
-local GamificationConfig = {
-    enabled = false,
-    endpoint = nil,
-    notifications = true,
-    secretKey = "vortex_secret_key_2024"
-}
-
--- Configure gamification system
-function VortexUI.ConfigureGamification(config)
-    GamificationConfig.enabled = config.enabled or false
-    GamificationConfig.endpoint = config.endpoint or nil
-    GamificationConfig.notifications = config.notifications ~= false
-end
-
--- Get unique user identifier
-function VortexUI.GetUserID()
-    local player = game.Players.LocalPlayer
-    return player and player.UserId or "guest_" .. tick()
-end
-
--- Claim points for script usage
-function VortexUI.ClaimPoints(scriptName)
-    if not GamificationConfig.enabled or not GamificationConfig.endpoint then
-        return false
-    end
-    
-    local HttpService = game:GetService("HttpService")
-    local userID = VortexUI.GetUserID()
-    
-    local payload = HttpService:JSONEncode({
-        user_id = userID,
-        script_name = scriptName,
-        timestamp = os.time()
-    })
-    
-    local success, response = pcall(function()
-        return HttpService:PostAsync(
-            GamificationConfig.endpoint .. "/claim",
-            payload,
-            Enum.HttpContentType.ApplicationJson,
-            false,
-            {
-                ["Authorization"] = "Bearer " .. GamificationConfig.secretKey,
-                ["Content-Type"] = "application/json"
-            }
-        )
-    end)
-    
-    if success then
-        if GamificationConfig.notifications then
-            VortexUI.ShowNotification("Points Awarded!", "You earned points for using " .. scriptName, "success")
-        end
-        return true
-    else
-        warn("Failed to claim points:", response)
-        return false
-    end
-end
-
--- Get cooldown remaining for a script
-function VortexUI.GetCooldownRemaining(scriptName)
-    -- This would typically check with the server
-    -- For now, return 0 (no cooldown)
-    return 0
-end
-
--- Format cooldown time for display
-function VortexUI.FormatCooldown(seconds)
-    if seconds <= 0 then
-        return "Available"
-    elseif seconds < 60 then
-        return math.floor(seconds) .. "s"
-    elseif seconds < 3600 then
-        return math.floor(seconds / 60) .. "m"
-    else
-        return math.floor(seconds / 3600) .. "h"
-    end
-end
-
--- =============================================================================
--- DISCORD INTEGRATION
--- =============================================================================
-
--- Check if Discord account is linked
-function VortexUI.IsDiscordLinked()
-    if not GamificationConfig.enabled or not GamificationConfig.endpoint then
-        return false, nil
-    end
-    
-    local HttpService = game:GetService("HttpService")
-    local userID = VortexUI.GetUserID()
-    
-    local success, response = pcall(function()
-        return HttpService:GetAsync(
-            GamificationConfig.endpoint .. "/user/" .. userID .. "/discord-status",
-            false,
-            {
-                ["Authorization"] = "Bearer " .. GamificationConfig.secretKey
-            }
-        )
-    end)
-    
-    if success then
-        local data = HttpService:JSONDecode(response)
-        return data.linked or false, data.username or nil
-    else
-        return false, nil
-    end
-end
-
--- Link Discord account with code
-function VortexUI.LinkDiscordWithCode(code)
-    if not GamificationConfig.enabled or not GamificationConfig.endpoint then
-        return false, "Gamification not configured"
-    end
-    
-    local HttpService = game:GetService("HttpService")
-    local userID = VortexUI.GetUserID()
-    
-    local payload = HttpService:JSONEncode({
-        code = code,
-        user_id = userID
-    })
-    
-    local success, response = pcall(function()
-        return HttpService:PostAsync(
-            GamificationConfig.endpoint .. "/link-discord",
-            payload,
-            Enum.HttpContentType.ApplicationJson,
-            false,
-            {
-                ["Authorization"] = "Bearer " .. GamificationConfig.secretKey,
-                ["Content-Type"] = "application/json"
-            }
-        )
-    end)
-    
-    if success then
-        local data = HttpService:JSONDecode(response)
-        return data.success or false, data.message or "Unknown error"
-    else
-        return false, "Failed to connect to server"
-    end
-end
-
--- Create Discord linking UI
-function VortexUI.CreateDiscordLinkUI(parentWindow, position)
-    local linkingFrame = CreateElement("Frame", {
-        Name = "DiscordLinking",
-        Size = UDim2.new(1, -32, 0, 120),
-        Position = position or UDim2.new(0, 16, 0, 0),
-        BackgroundColor3 = CONFIG.PANEL_COLOR,
-        BorderSizePixel = 0
-    })
-    
-    AddCorner(linkingFrame, CONFIG.CORNER_RADIUS)
-    
-    local titleLabel = CreateElement("TextLabel", {
-        Name = "Title",
-        Size = UDim2.new(1, -32, 0, 20),
-        Position = UDim2.new(0, 16, 0, 12),
-        BackgroundTransparency = 1,
-        Text = "🔗 Discord Integration",
-        TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 14,
-        Font = Enum.Font.Montserrat,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-    titleLabel.Parent = linkingFrame
-    
-    local descLabel = CreateElement("TextLabel", {
-        Name = "Description",
-        Size = UDim2.new(1, -32, 0, 40),
-        Position = UDim2.new(0, 16, 0, 36),
-        BackgroundTransparency = 1,
-        Text = "Link your Discord account to unlock rewards\nand track your progress!",
-        TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = 12,
-        Font = Enum.Font.Montserrat,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true
-    })
-    descLabel.Parent = linkingFrame
-    
-    local linkButton = CreateElement("TextButton", {
-        Name = "LinkButton",
-        Size = UDim2.new(0, 120, 0, 32),
-        Position = UDim2.new(0, 16, 0, 80),
-        BackgroundColor3 = CONFIG.ACCENT_COLOR,
-        BorderSizePixel = 0,
-        Text = "Link Discord",
-        TextColor3 = Color3.new(1, 1, 1),
-        TextSize = 12,
-        Font = Enum.Font.Montserrat,
-        AutoButtonColor = false
-    })
-    linkButton.Parent = linkingFrame
-    AddCorner(linkButton, CONFIG.CORNER_RADIUS_SM)
-    
-    linkButton.MouseButton1Click:Connect(function()
-        local userID = VortexUI.GetUserID()
-        VortexUI.ShowNotification(
-            "Discord Linking",
-            "Type !link in Discord to get your code!\nYour User ID: " .. string.sub(userID, 1, 8) .. "...",
-            "info"
-        )
-    end)
-    
-    return linkingFrame
-end
-
--- =============================================================================
--- NOTIFICATION SYSTEM
--- =============================================================================
-
--- Show notification to user
-function VortexUI.ShowNotification(title, message, type)
-    type = type or "info"
-    
-    local CoreGui = game:GetService("CoreGui")
-    local notificationGui = CreateElement("ScreenGui", {
-        Name = "VortexNotification_" .. tick(),
-        IgnoreGuiInset = true,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    })
-    notificationGui.Parent = CoreGui
-    
-    -- Determine colors based on type
-    local bgColor, iconColor
-    if type == "success" then
-        bgColor = CONFIG.SUCCESS_COLOR
-        iconColor = CONFIG.SUCCESS_GLOW
-    elseif type == "error" then
-        bgColor = CONFIG.ERROR_COLOR
-        iconColor = CONFIG.ERROR_GLOW
-    elseif type == "warning" then
-        bgColor = CONFIG.WARNING_COLOR
-        iconColor = CONFIG.WARNING_COLOR
-    else
-        bgColor = CONFIG.ACCENT_COLOR
-        iconColor = CONFIG.ACCENT_GLOW
-    end
-    
-    local notification = CreateElement("Frame", {
-        Name = "Notification",
-        Size = UDim2.new(0, 320, 0, 80),
-        Position = UDim2.new(1, 340, 0, 100),
-        BackgroundColor3 = CONFIG.PRIMARY_COLOR,
-        BorderSizePixel = 0
-    })
-    notification.Parent = notificationGui
-    AddCorner(notification, CONFIG.CORNER_RADIUS)
-    AddStroke(notification, 1, bgColor, 0.8)
-    
-    -- Icon
-    local icon = CreateElement("Frame", {
-        Name = "Icon",
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(0, 16, 0.5, -20),
-        BackgroundColor3 = bgColor,
-        BorderSizePixel = 0
-    })
-    icon.Parent = notification
-    AddCorner(icon, UDim.new(0, 20))
-    
-    local iconLabel = CreateElement("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = type == "success" and "✓" or type == "error" and "✕" or "ℹ",
-        TextColor3 = Color3.new(1, 1, 1),
-        TextSize = 20,
-        Font = Enum.Font.Montserrat
-    })
-    iconLabel.Parent = icon
-    
-    -- Title
-    local titleLabel = CreateElement("TextLabel", {
-        Name = "Title",
-        Size = UDim2.new(1, -80, 0, 20),
-        Position = UDim2.new(0, 72, 0, 16),
-        BackgroundTransparency = 1,
-        Text = title or "Notification",
-        TextColor3 = CONFIG.TEXT_COLOR,
-        TextSize = 14,
-        Font = Enum.Font.Montserrat,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-    titleLabel.Parent = notification
-    
-    -- Message
-    local messageLabel = CreateElement("TextLabel", {
-        Name = "Message",
-        Size = UDim2.new(1, -80, 0, 40),
-        Position = UDim2.new(0, 72, 0, 32),
-        BackgroundTransparency = 1,
-        Text = message or "",
-        TextColor3 = CONFIG.SUB_TEXT_COLOR,
-        TextSize = 12,
-        Font = Enum.Font.Montserrat,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true
-    })
-    messageLabel.Parent = notification
-    
-    -- Animate in
-    CreateTween(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-        Position = UDim2.new(1, -340, 0, 100)
-    }):Play()
-    
-    -- Auto remove after 5 seconds
-    task.spawn(function()
-        task.wait(5)
-        if notificationGui and notificationGui.Parent then
-            CreateTween(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-                Position = UDim2.new(1, 340, 0, 100)
-            }):Play()
-            task.wait(0.3)
-            notificationGui:Destroy()
         end
     end)
 end
