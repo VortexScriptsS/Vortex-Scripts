@@ -2197,7 +2197,7 @@ function VortexUI:CreateWindow(options)
                     BorderSizePixel = 0,
                     Text = "",
                     AutoButtonColor = false,
-                    ZIndex = 1001 -- Higher than dropdown frame, lower than list container
+                    ZIndex = 1 -- Lower than container but visible within it
                 })
                 optionButton.Parent = optionsListFrame
                 
@@ -2212,7 +2212,7 @@ function VortexUI:CreateWindow(options)
                     TextSize = 13,
                     Font = isSelected and Enum.Font.Montserrat or Enum.Font.Montserrat,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 1002 -- Higher than option button
+                    ZIndex = 2 -- Higher than option button
                 })
                 optionLabel.Parent = optionButton
                 
@@ -2226,7 +2226,7 @@ function VortexUI:CreateWindow(options)
                     TextSize = 12,
                     Font = Enum.Font.Montserrat,
                     Visible = isSelected,
-                    ZIndex = 1002 -- Same as option label
+                    ZIndex = 2 -- Same as option label
                 })
                 checkmark.Parent = optionButton
                 
