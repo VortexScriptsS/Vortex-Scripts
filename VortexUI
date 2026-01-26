@@ -1132,7 +1132,7 @@ function VortexUI:CreateWindow(options)
             BorderSizePixel = 0
         })
         tabContent.Parent = contentArea
-        tabContent.ClipsDescendants = false
+        tabContent.ClipsDescendants = true
         
         -- Use AutomaticCanvasSize for engine-native performance
         contentArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
