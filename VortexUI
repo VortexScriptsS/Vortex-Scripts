@@ -4,8 +4,23 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local player = game.Players.LocalPlayer
 
--- Load Icons module
-local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"))()
+-- Load Icons module with safety wrapper
+local Icons = {}
+local success, result = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"))()
+end)
+if success then
+    Icons = result
+else
+    warn("VortexUI: Failed to load Icons module, using fallback icons")
+    Icons = {
+        ["chevron-down"] = "▼",
+        ["chevron-up"] = "▲",
+        ["x"] = "×",
+        ["check"] = "✓",
+        ["menu"] = "☰"
+    }
+end
 
 -- Modernized color palette with better contrast and depth
 local CONFIG = {
@@ -127,12 +142,40 @@ local CleanupManager = {
     ActiveConnections = {},
     ActiveLoops = {},
     ActiveToggles = {},
-    CleanupCallbacks = {}
+    CleanupCallbacks = {},
+    ActiveTweens = {}
 }
+
+-- Tween management system to prevent overlapping
+local TweenManager = {
+    ActiveTweens = {}
+}
+
+local function CreateManagedTween(object, info, properties, elementName)
+    -- Cancel existing tween for this element if it exists
+    if TweenManager.ActiveTweens[elementName] then
+        TweenManager.ActiveTweens[elementName]:Cancel()
+    end
+    
+    local tween = TweenService:Create(object, info, properties)
+    TweenManager.ActiveTweens[elementName] = tween
+    
+    -- Clean up tween reference when it completes
+    tween.Completed:Connect(function()
+        TweenManager.ActiveTweens[elementName] = nil
+    end)
+    
+    return tween
+end
 
 -- Utility Functions
 local function CreateElement(elementType, properties)
     local element = Instance.new(elementType)
+    
+    -- Extract Parent to set last for performance
+    local parent = properties.Parent
+    properties.Parent = nil
+    
     for prop, value in pairs(properties) do
         if typeof(value) == "EnumItem" or typeof(value) == "Color3" or typeof(value) == "UDim2" or typeof(value) == "UDim" or typeof(value) == "boolean" then
             element[prop] = value
@@ -141,11 +184,32 @@ local function CreateElement(elementType, properties)
         end
     end
     
+    -- Set Parent last to avoid unnecessary render updates
+    if parent then element.Parent = parent end
+    
     if elementType == "TextButton" then
         element.AutoButtonColor = properties.AutoButtonColor ~= false
         element.TextColor3 = properties.TextColor3 or Color3.new(1, 1, 1)
         element.TextSize = properties.TextSize or 14
         element.Font = properties.Font or Enum.Font.Montserrat
+        
+        -- Add text truncation for better UX
+        if not properties.TextTruncate then
+            element.TextTruncate = Enum.TextTruncate.AtEnd
+        end
+    elseif elementType == "TextLabel" then
+        -- Add text truncation for better UX
+        if not properties.TextTruncate then
+            element.TextTruncate = Enum.TextTruncate.AtEnd
+        end
+        
+        -- Add UITextSizeConstraint for responsive text scaling
+        if properties.TextScaled and not element:FindFirstChild("UITextSizeConstraint") then
+            local textSizeConstraint = Instance.new("UITextSizeConstraint")
+            textSizeConstraint.MaxTextSize = properties.TextSize or 14
+            textSizeConstraint.MinTextSize = math.max(8, (properties.TextSize or 14) * 0.6)
+            textSizeConstraint.Parent = element
+        end
     end
     
     return element
@@ -291,6 +355,8 @@ function VortexUI:CreateWindow(options)
     local windowName = options.Name or "Vortex UI"
     local keySystem = options.KeySystem or nil
     local onWindowCreated = options.OnWindowCreated or nil
+    local keySystemFolder = options.KeySystemFolder or "Vortex"
+    local keySystemFile = options.KeySystemFile or "Key.txt"
     
     -- Initialize responsive scale
     UpdateResponsiveScale()
@@ -299,6 +365,8 @@ function VortexUI:CreateWindow(options)
         KeySystem.Enabled = true
         KeySystem.ValidKeys = keySystem.ValidKeys or {}
         KeySystem.Authenticated = false
+        KeySystem.Folder = keySystemFolder
+        KeySystem.File = keySystemFile
         
         if not KeySystem.Authenticated then
             VortexUI:ShowKeyWindow(function(success)
@@ -307,7 +375,9 @@ function VortexUI:CreateWindow(options)
                     local windowOptions = {
                         Name = windowName,
                         KeySystem = nil,
-                        OnWindowCreated = onWindowCreated
+                        OnWindowCreated = onWindowCreated,
+                        KeySystemFolder = keySystemFolder,
+                        KeySystemFile = keySystemFile
                     }
                     VortexUI:CreateWindow(windowOptions)
                 end
@@ -526,41 +596,41 @@ function VortexUI:CreateWindow(options)
     
     -- Enhanced hover effects for control buttons
     minimizeButton.MouseEnter:Connect(function()
-        CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+        CreateManagedTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
             BackgroundTransparency = 0
-        }):Play()
-        CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+        }, "minimizeButton"):Play()
+        CreateManagedTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
             TextColor3 = CONFIG.TEXT_COLOR
-        }):Play()
+        }, "minimizeIcon"):Play()
     end)
     
     minimizeButton.MouseLeave:Connect(function()
-        CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+        CreateManagedTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
             BackgroundTransparency = 1
-        }):Play()
-        CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+        }, "minimizeButton"):Play()
+        CreateManagedTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
             TextColor3 = CONFIG.SUB_TEXT_COLOR
-        }):Play()
+        }, "minimizeIcon"):Play()
     end)
     
     closeButton.MouseEnter:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+        CreateManagedTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
             BackgroundTransparency = 0,
             BackgroundColor3 = CONFIG.ERROR_COLOR
-        }):Play()
-        CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+        }, "closeButton"):Play()
+        CreateManagedTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
             TextColor3 = CONFIG.TEXT_COLOR
-        }):Play()
+        }, "closeIcon"):Play()
     end)
     
     closeButton.MouseLeave:Connect(function()
-        CreateTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
+        CreateManagedTween(closeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
             BackgroundTransparency = 1,
             BackgroundColor3 = CONFIG.INPUT_COLOR
-        }):Play()
-        CreateTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
+        }, "closeButton"):Play()
+        CreateManagedTween(closeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
             TextColor3 = CONFIG.SUB_TEXT_COLOR
-        }):Play()
+        }, "closeIcon"):Play()
     end)
     
     -- Minimize/Maximize functionality
@@ -594,7 +664,7 @@ function VortexUI:CreateWindow(options)
     })
     contentFrame.Parent = mainFrame
     
-    -- Enhanced Sidebar with better styling
+    -- Enhanced Sidebar with better styling and search
     local sidebarWidth = Responsive.CurrentCategory == "Mobile" and GetResponsiveSize(160) or GetResponsiveSize(200)
     local sidebarFrame = CreateElement("Frame", {
         Name = "SidebarFrame",
@@ -623,6 +693,116 @@ function VortexUI:CreateWindow(options)
         PaddingBottom = UDim.new(0, GetResponsiveSize(12))
     })
     sidebarPadding.Parent = sidebarFrame
+    
+    -- Search bar for tabs
+    local searchBarContainer = CreateElement("Frame", {
+        Name = "SearchBarContainer",
+        Size = UDim2.new(1, 0, 0, GetResponsiveSize(32)),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = CONFIG.INPUT_COLOR,
+        BorderSizePixel = 0
+    })
+    searchBarContainer.Parent = sidebarFrame
+    AddCorner(searchBarContainer, CONFIG.CORNER_RADIUS_SM)
+    local searchStroke = AddStroke(searchBarContainer, 1, CONFIG.BORDER_COLOR, 0.4)
+    
+    local searchIcon = CreateElement("TextLabel", {
+        Name = "SearchIcon",
+        Size = UDim2.new(0, GetResponsiveSize(16), 0, GetResponsiveSize(16)),
+        Position = UDim2.new(0, GetResponsiveSize(8), 0.5, -GetResponsiveSize(8)),
+        BackgroundTransparency = 1,
+        Text = Icons["search"] or "🔍",
+        TextColor3 = CONFIG.SUB_TEXT_COLOR,
+        TextSize = GetResponsiveFontSize(12),
+        Font = Enum.Font.Montserrat
+    })
+    searchIcon.Parent = searchBarContainer
+    
+    local searchBar = CreateElement("TextBox", {
+        Name = "SearchBar",
+        Size = UDim2.new(1, -GetResponsiveSize(32), 1, 0),
+        Position = UDim2.new(0, GetResponsiveSize(24), 0, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        PlaceholderText = "Search tabs...",
+        PlaceholderColor3 = CONFIG.MUTED_COLOR,
+        TextColor3 = CONFIG.TEXT_COLOR,
+        TextSize = GetResponsiveFontSize(12),
+        Font = Enum.Font.Montserrat,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false
+    })
+    searchBar.Parent = searchBarContainer
+    
+    -- Search focus effects
+    searchBar.Focused:Connect(function()
+        CreateTween(searchStroke, TweenInfo.new(0.15), {
+            Color = CONFIG.ACCENT_COLOR,
+            Transparency = 0
+        }):Play()
+    end)
+    
+    searchBar.FocusLost:Connect(function()
+        CreateTween(searchStroke, TweenInfo.new(0.15), {
+            Color = CONFIG.BORDER_COLOR,
+            Transparency = 0.4
+        }):Play()
+    end)
+    
+    -- Tabs container for scrolling
+    local tabsContainer = CreateElement("ScrollingFrame", {
+        Name = "TabsContainer",
+        Size = UDim2.new(1, 0, 1, -GetResponsiveSize(44)),
+        Position = UDim2.new(0, 0, 0, GetResponsiveSize(44)),
+        BackgroundColor3 = CONFIG.SECONDARY_COLOR,
+        BorderSizePixel = 0,
+        ScrollBarThickness = GetResponsiveSize(3),
+        ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
+        ScrollBarImageTransparency = 0.5,
+        TopImage = "rbxassetid://6015897843",
+        MidImage = "rbxassetid://6015897843",
+        BottomImage = "rbxassetid://6015897843"
+    })
+    tabsContainer.Parent = sidebarFrame
+    tabsContainer.ClipsDescendants = true
+    
+    -- Use AutomaticCanvasSize for tabs container
+    tabsContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    tabsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    
+    local tabsListLayout = CreateElement("UIListLayout", {
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, GetResponsiveSize(8))
+    })
+    tabsListLayout.Parent = tabsContainer
+    
+    -- Search filtering logic for tabs
+    local function filterTabs(searchText)
+        local lowerSearchText = string.lower(searchText)
+        
+        for tabName, tabData in pairs(WindowInstances[window].Tabs) do
+            local tabButton = tabData.Button
+            local shouldShow = string.lower(tabName):find(lowerSearchText, 1, true)
+            
+            if shouldShow then
+                tabButton.Visible = true
+                CreateTween(tabButton, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 1
+                }):Play()
+            else
+                CreateTween(tabButton, TweenInfo.new(0.15), {
+                    BackgroundTransparency = 0.5
+                }):Play()
+                task.wait(0.15)
+                tabButton.Visible = false
+            end
+        end
+    end
+    
+    -- Connect search bar input
+    searchBar.Changed:Connect(function()
+        filterTabs(searchBar.Text)
+    end)
     
     -- Enhanced Content Area with better scrollbar
     local contentArea = CreateElement("ScrollingFrame", {
@@ -731,26 +911,48 @@ function VortexUI:CreateWindow(options)
         updateMinimizedState()
     end)
     
-    -- Dragging
+    -- Dragging with RenderStepped for smoother movement
     local dragging
     local dragInput
     local dragStart
     local startPos
+    local targetPosition
+    local renderSteppedConnection
     
-    local function update(input)
-        local delta = input.Position - dragStart
-        local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        local boundedPosition = keepInBounds(newPosition, isMinimized and minimizedSize or mainFrame.Size)
-        mainFrame.Position = boundedPosition
+    local function updatePosition()
+        if not dragging then
+            if renderSteppedConnection then
+                renderSteppedConnection:Disconnect()
+                renderSteppedConnection = nil
+            end
+            return
+        end
         
-        -- Move background frame along with main frame
-        local backgroundOffset = GetResponsiveSize(5) -- Responsive offset
-        backgroundFrame.Position = UDim2.new(
-            boundedPosition.X.Scale, 
-            boundedPosition.X.Offset - backgroundOffset, 
-            boundedPosition.Y.Scale, 
-            boundedPosition.Y.Offset - backgroundOffset
-        )
+        if dragInput then
+            local delta = dragInput.Position - dragStart
+            local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            targetPosition = keepInBounds(newPosition, isMinimized and minimizedSize or mainFrame.Size)
+            
+            -- Smooth interpolation towards target position
+            local currentPosition = mainFrame.Position
+            local smoothedPosition = UDim2.new(
+                currentPosition.X.Scale + (targetPosition.X.Scale - currentPosition.X.Scale) * 0.2,
+                currentPosition.X.Offset + (targetPosition.X.Offset - currentPosition.X.Offset) * 0.2,
+                currentPosition.Y.Scale + (targetPosition.Y.Scale - currentPosition.Y.Scale) * 0.2,
+                currentPosition.Y.Offset + (targetPosition.Y.Offset - currentPosition.Y.Offset) * 0.2
+            )
+            
+            mainFrame.Position = smoothedPosition
+            
+            -- Move background frame along with main frame
+            local backgroundOffset = GetResponsiveSize(5)
+            backgroundFrame.Position = UDim2.new(
+                smoothedPosition.X.Scale, 
+                smoothedPosition.X.Offset - backgroundOffset, 
+                smoothedPosition.Y.Scale, 
+                smoothedPosition.Y.Offset - backgroundOffset
+            )
+        end
     end
     
     local function handleDragStart(input)
@@ -758,6 +960,12 @@ function VortexUI:CreateWindow(options)
             dragging = true
             dragStart = input.Position
             startPos = mainFrame.Position
+            
+            -- Start RenderStepped connection for smooth updates
+            if not renderSteppedConnection then
+                renderSteppedConnection = RunService.RenderStepped:Connect(updatePosition)
+                TrackConnection(renderSteppedConnection, window)
+            end
             
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
@@ -783,14 +991,6 @@ function VortexUI:CreateWindow(options)
     
     setupDrag(headerBar)
     setupDrag(logoFrame)
-    
-    local dragConnection = UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
-    end)
-    
-    TrackConnection(dragConnection, window)
     
     closeButton.MouseButton1Click:Connect(function()
         CleanupWindow(window)
@@ -914,7 +1114,7 @@ function VortexUI:CreateWindow(options)
             AutoButtonColor = false,
             ZIndex = 10
         })
-        tabButton.Parent = sidebarFrame
+        tabButton.Parent = tabsContainer
         
         AddCorner(tabButton, CONFIG.CORNER_RADIUS)
         
@@ -1013,13 +1213,9 @@ function VortexUI:CreateWindow(options)
         tabContent.Parent = contentArea
         tabContent.ClipsDescendants = true
         
-        local function updateCanvasSize()
-            local layout = tabContent:FindFirstChildOfClass("UIListLayout")
-            if layout then
-                local absoluteContentSize = layout.AbsoluteContentSize
-                contentArea.CanvasSize = UDim2.new(0, 0, 0, absoluteContentSize.Y + GetResponsiveSize(48))
-            end
-        end
+        -- Use AutomaticCanvasSize for engine-native performance
+        contentArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, 0)
         
         -- Tab click handler
         tabButton.MouseButton1Click:Connect(function()
@@ -1097,8 +1293,6 @@ function VortexUI:CreateWindow(options)
                 Size = UDim2.new(0, 3, 1, 0),
                 BackgroundTransparency = 0
             }):Play()
-            
-            updateCanvasSize()
         end)
         
         local tabLayout = CreateElement("UIListLayout", {
@@ -1106,8 +1300,6 @@ function VortexUI:CreateWindow(options)
             Padding = UDim.new(0, GetResponsiveSize(12))
         })
         tabLayout.Parent = tabContent
-        
-        tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
         
         WindowInstances[window].Tabs[tabName] = {
             Button = tabButton,
@@ -1660,7 +1852,7 @@ function VortexUI:CreateWindow(options)
             return element
         end
         
-        -- Completely redesigned modern dropdown
+        -- Completely redesigned modern dropdown with search
         function tab:CreateDropdown(options)
             local dropdownName = options.Name or "Dropdown"
             local optionsList = options.Options or {}
@@ -1668,10 +1860,11 @@ function VortexUI:CreateWindow(options)
             local multipleOptions = options.MultipleOptions or false
             local flag = options.Flag or dropdownName
             local callback = options.Callback or function() end
+            local enableSearch = options.EnableSearch ~= false -- Default to true
             
             local dropdownFrame = CreateElement("Frame", {
                 Name = "DropdownFrame_" .. dropdownName,
-                Size = UDim2.new(1, 0, 0, 70),
+                Size = UDim2.new(1, 0, 0, enableSearch and 106 or 70),
                 BackgroundColor3 = CONFIG.PANEL_COLOR,
                 BorderSizePixel = 0
             })
@@ -1696,11 +1889,72 @@ function VortexUI:CreateWindow(options)
             })
             label.Parent = dropdownFrame
             
+            -- Search bar for dropdown (if enabled)
+            local searchBar = nil
+            if enableSearch and #optionsList > 5 then -- Only show search if more than 5 options
+                local searchContainer = CreateElement("Frame", {
+                    Name = "SearchContainer",
+                    Size = UDim2.new(1, -32, 0, 24),
+                    Position = UDim2.new(0, 16, 0, 32),
+                    BackgroundColor3 = CONFIG.INPUT_COLOR,
+                    BorderSizePixel = 0,
+                    ZIndex = 31
+                })
+                searchContainer.Parent = dropdownFrame
+                AddCorner(searchContainer, CONFIG.CORNER_RADIUS_SM)
+                local searchStroke = AddStroke(searchContainer, 1, CONFIG.BORDER_COLOR, 0.4)
+                
+                local searchIcon = CreateElement("TextLabel", {
+                    Name = "SearchIcon",
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(0, 6, 0.5, -6),
+                    BackgroundTransparency = 1,
+                    Text = Icons["search"] or "🔍",
+                    TextColor3 = CONFIG.SUB_TEXT_COLOR,
+                    TextSize = 10,
+                    Font = Enum.Font.Montserrat,
+                    ZIndex = 32
+                })
+                searchIcon.Parent = searchContainer
+                
+                searchBar = CreateElement("TextBox", {
+                    Name = "SearchBar",
+                    Size = UDim2.new(1, -24, 1, 0),
+                    Position = UDim2.new(0, 18, 0, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    PlaceholderText = "Search options...",
+                    PlaceholderColor3 = CONFIG.MUTED_COLOR,
+                    TextColor3 = CONFIG.TEXT_COLOR,
+                    TextSize = 11,
+                    Font = Enum.Font.Montserrat,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ClearTextOnFocus = false,
+                    ZIndex = 32
+                })
+                searchBar.Parent = searchContainer
+                
+                -- Search focus effects
+                searchBar.Focused:Connect(function()
+                    CreateTween(searchStroke, TweenInfo.new(0.15), {
+                        Color = CONFIG.ACCENT_COLOR,
+                        Transparency = 0
+                    }):Play()
+                end)
+                
+                searchBar.FocusLost:Connect(function()
+                    CreateTween(searchStroke, TweenInfo.new(0.15), {
+                        Color = CONFIG.BORDER_COLOR,
+                        Transparency = 0.4
+                    }):Play()
+                end)
+            end
+            
             -- Modern dropdown button with enhanced styling
             local dropdownButton = CreateElement("TextButton", {
                 Name = "DropdownButton",
                 Size = UDim2.new(1, -32, 0, 36),
-                Position = UDim2.new(0, 16, 0, 28),
+                Position = UDim2.new(0, 16, 0, enableSearch and 64 or 28),
                 BackgroundColor3 = CONFIG.INPUT_COLOR,
                 BorderSizePixel = 0,
                 Text = "",
@@ -1760,7 +2014,7 @@ function VortexUI:CreateWindow(options)
                 ScrollBarThickness = 3,
                 ScrollBarImageColor3 = CONFIG.ACCENT_COLOR,
                 ScrollBarImageTransparency = 0.5,
-                ZIndex = 100,
+                ZIndex = 1000, -- Significantly higher than window elements
                 TopImage = "rbxassetid://6015897843",
                 MidImage = "rbxassetid://6015897843",
                 BottomImage = "rbxassetid://6015897843"
@@ -1846,12 +2100,12 @@ function VortexUI:CreateWindow(options)
                     optionsListFrame.BackgroundTransparency = 1
                     
                     dropdownFrame.ZIndex = 100
-                    optionsListFrame.ZIndex = 101
-                    label.ZIndex = 102
-                    dropdownButton.ZIndex = 102
-                    selectedText.ZIndex = 103
-                    chevronContainer.ZIndex = 103
-                    chevron.ZIndex = 104
+                    optionsListFrame.ZIndex = 1000 -- Significantly higher than window
+                    label.ZIndex = 101
+                    dropdownButton.ZIndex = 101
+                    selectedText.ZIndex = 102
+                    chevronContainer.ZIndex = 102
+                    chevron.ZIndex = 103
                     
                     CreateTween(optionsListFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, -32, 0, openHeight),
@@ -1907,6 +2161,48 @@ function VortexUI:CreateWindow(options)
             
             updateDropdownText()
             
+            -- Search filtering logic for dropdown options
+            local function filterDropdownOptions(searchText)
+                local lowerSearchText = string.lower(searchText)
+                
+                for _, child in pairs(optionsListFrame:GetChildren()) do
+                    if child:IsA("TextButton") and child.Name:find("^Option_") then
+                        local optionLabel = child:FindFirstChildWhichIsA("TextLabel")
+                        if optionLabel then
+                            local optionText = optionLabel.Text
+                            local shouldShow = string.lower(optionText):find(lowerSearchText, 1, true)
+                            
+                            if shouldShow then
+                                child.Visible = true
+                                CreateTween(child, TweenInfo.new(0.1), {
+                                    BackgroundTransparency = 0
+                                }):Play()
+                            else
+                                CreateTween(child, TweenInfo.new(0.1), {
+                                    BackgroundTransparency = 0.8
+                                }):Play()
+                                task.wait(0.1)
+                                child.Visible = false
+                            end
+                        end
+                    end
+                end
+                
+                -- Update canvas size after filtering
+                task.wait()
+                if isOpen then
+                    local openHeight = updateCanvasSizeDropdown()
+                    optionsListFrame.Size = UDim2.new(1, -32, 0, openHeight)
+                end
+            end
+            
+            -- Connect search bar input if it exists
+            if searchBar then
+                searchBar.Changed:Connect(function()
+                    filterDropdownOptions(searchBar.Text)
+                end)
+            end
+            
             -- Create modern option buttons
             local function createOptionButton(i, option)
                 local isSelected = multipleOptions and table.find(selectedOptions, option) or selectedOptions == option
@@ -1919,7 +2215,7 @@ function VortexUI:CreateWindow(options)
                     BorderSizePixel = 0,
                     Text = "",
                     AutoButtonColor = false,
-                    ZIndex = 102
+                    ZIndex = 1001 -- Higher than dropdown frame, lower than list container
                 })
                 optionButton.Parent = optionsListFrame
                 
@@ -1934,7 +2230,7 @@ function VortexUI:CreateWindow(options)
                     TextSize = 13,
                     Font = isSelected and Enum.Font.Montserrat or Enum.Font.Montserrat,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 103
+                    ZIndex = 1002 -- Higher than option button
                 })
                 optionLabel.Parent = optionButton
                 
@@ -1948,7 +2244,7 @@ function VortexUI:CreateWindow(options)
                     TextSize = 12,
                     Font = Enum.Font.Montserrat,
                     Visible = isSelected,
-                    ZIndex = 103
+                    ZIndex = 1002 -- Same as option label
                 })
                 checkmark.Parent = optionButton
                 
@@ -2232,12 +2528,16 @@ end
 function VortexUI:ShowKeyWindow(callback, keySystemData)
     local function loadSavedKey()
         local success, result = pcall(function()
-            if not isfolder("Vortex") then
-                makefolder("Vortex")
+            local folder = KeySystem.Folder or "Vortex"
+            local file = KeySystem.File or "Key.txt"
+            local path = folder .. "/" .. file
+            
+            if not isfolder(folder) then
+                makefolder(folder)
             end
             
-            if isfile("Vortex/Key.txt") then
-                local content = readfile("Vortex/Key.txt")
+            if isfile(path) then
+                local content = readfile(path)
                 return content and content:gsub("%s+$", "") or nil
             end
             return nil
@@ -2247,10 +2547,14 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     local function saveKey(key)
         pcall(function()
-            if not isfolder("Vortex") then
-                makefolder("Vortex")
+            local folder = KeySystem.Folder or "Vortex"
+            local file = KeySystem.File or "Key.txt"
+            local path = folder .. "/" .. file
+            
+            if not isfolder(folder) then
+                makefolder(folder)
             end
-            writefile("Vortex/Key.txt", key)
+            writefile(path, key)
         end)
     end
     
