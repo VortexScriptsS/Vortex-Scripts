@@ -709,7 +709,7 @@ function VortexUI:CreateWindow(options)
         BottomImage = "rbxassetid://6015897843"
     })
     contentArea.Parent = contentFrame
-    contentArea.ClipsDescendants = true
+    contentArea.ClipsDescendants = false
     
     -- Tabs container for scrolling
     local tabsContainer = CreateElement("ScrollingFrame", {
@@ -1609,7 +1609,8 @@ function VortexUI:CreateWindow(options)
                 TextColor3 = CONFIG.TEXT_COLOR,
                 TextSize = GetResponsiveFontSize(14),
                 Font = Enum.Font.Montserrat,
-                TextXAlignment = Enum.TextXAlignment.Left
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd
             })
             label.Parent = sliderFrame
             
@@ -1632,7 +1633,8 @@ function VortexUI:CreateWindow(options)
                 Text = currentValue .. suffix,
                 TextColor3 = Color3.new(1, 1, 1),
                 TextSize = GetResponsiveFontSize(12),
-                Font = Enum.Font.Montserrat
+                Font = Enum.Font.Montserrat,
+                TextTruncate = Enum.TextTruncate.AtEnd
             })
             valueLabel.Parent = valueDisplay
             
