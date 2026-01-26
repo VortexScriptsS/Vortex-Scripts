@@ -7,38 +7,34 @@ local player = game.Players.LocalPlayer
 -- Load Icons module
 local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"))()
 
--- Premium color palette with enhanced depth and visual appeal
+-- Modernized color palette with better contrast and depth
 local CONFIG = {
-    -- Base colors - rich, sophisticated dark theme with subtle warmth
-    PRIMARY_COLOR = Color3.fromRGB(12, 12, 18),
-    SECONDARY_COLOR = Color3.fromRGB(18, 18, 28),
-    PANEL_COLOR = Color3.fromRGB(26, 26, 38),
-    INPUT_COLOR = Color3.fromRGB(34, 34, 48),
+    -- Base colors - deeper, richer tones
+    PRIMARY_COLOR = Color3.fromRGB(16, 16, 16),
+    SECONDARY_COLOR = Color3.fromRGB(22, 22, 26),
+    PANEL_COLOR = Color3.fromRGB(32, 32, 38),
+    INPUT_COLOR = Color3.fromRGB(40, 40, 48),
     
-    -- Text colors with improved hierarchy and readability
-    TEXT_COLOR = Color3.fromRGB(250, 250, 255),
-    SUB_TEXT_COLOR = Color3.fromRGB(190, 190, 200),
-    MUTED_COLOR = Color3.fromRGB(130, 130, 145),
+    -- Text colors with better hierarchy
+    TEXT_COLOR = Color3.fromRGB(255, 255, 255),
+    SUB_TEXT_COLOR = Color3.fromRGB(180, 180, 180),
+    MUTED_COLOR = Color3.fromRGB(120, 120, 120),
     
-    -- Border and divider colors with subtle blue tint
-    BORDER_COLOR = Color3.fromRGB(60, 65, 80),
-    DIVIDER_COLOR = Color3.fromRGB(50, 55, 70),
+    -- Border and divider colors
+    BORDER_COLOR = Color3.fromRGB(55, 55, 65),
+    DIVIDER_COLOR = Color3.fromRGB(45, 45, 55),
     
-    -- Accent colors - vibrant purple-blue gradient theme
-    ACCENT_COLOR = Color3.fromRGB(99, 102, 241),
-    ACCENT_HOVER = Color3.fromRGB(79, 70, 229),
-    ACCENT_GLOW = Color3.fromRGB(129, 140, 248),
-    ACCENT_SECONDARY = Color3.fromRGB(139, 92, 246),
+    -- Accent colors - neutral blended theme
+    ACCENT_COLOR = Color3.fromRGB(59, 130, 246),
+    ACCENT_HOVER = Color3.fromRGB(37, 99, 235),
+    ACCENT_GLOW = Color3.fromRGB(96, 165, 250),
     
-    -- Status colors with enhanced vibrancy
-    SUCCESS_COLOR = Color3.fromRGB(16, 185, 129),
-    SUCCESS_GLOW = Color3.fromRGB(52, 211, 153),
-    ERROR_COLOR = Color3.fromRGB(244, 63, 94),
-    ERROR_GLOW = Color3.fromRGB(251, 113, 133),
-    WARNING_COLOR = Color3.fromRGB(251, 191, 36),
-    WARNING_GLOW = Color3.fromRGB(253, 224, 71),
-    INFO_COLOR = Color3.fromRGB(56, 189, 248),
-    INFO_GLOW = Color3.fromRGB(125, 211, 252),
+    -- Status colors
+    SUCCESS_COLOR = Color3.fromRGB(34, 197, 94),
+    SUCCESS_GLOW = Color3.fromRGB(74, 222, 128),
+    ERROR_COLOR = Color3.fromRGB(239, 68, 68),
+    ERROR_GLOW = Color3.fromRGB(252, 129, 129),
+    WARNING_COLOR = Color3.fromRGB(245, 158, 11),
     
     -- Design tokens
     CORNER_RADIUS = UDim.new(0, 10),
@@ -49,17 +45,9 @@ local CONFIG = {
     TRANSITION_TIME = 0.25,
     TRANSITION_TIME_FAST = 0.15,
     
-    -- Shadow colors for enhanced depth
-    SHADOW_COLOR = Color3.fromRGB(8, 8, 12),
-    SHADOW_TRANSPARENCY = 0.5,
-    
-    -- Gradient colors for premium effects
-    GRADIENT_START = Color3.fromRGB(99, 102, 241),
-    GRADIENT_END = Color3.fromRGB(139, 92, 246),
-    
-    -- Glassmorphism effect colors
-    GLASS_OVERLAY = Color3.fromRGB(255, 255, 255),
-    GLASS_TRANSPARENCY = 0.05
+    -- Shadow colors for depth
+    SHADOW_COLOR = Color3.fromRGB(0, 0, 0),
+    SHADOW_TRANSPARENCY = 0.6
 }
 
 -- Responsive Design System
@@ -204,35 +192,20 @@ local function AddShadow(parent, offset, spread, transparency)
     return shadow
 end
 
--- Enhanced gradient backgrounds with premium color support
+-- New utility for gradient backgrounds
 local function AddGradient(parent, startColor, endColor, rotation)
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, startColor or CONFIG.GRADIENT_START),
-        ColorSequenceKeypoint.new(0.5, Color3.new(
-            (startColor or CONFIG.GRADIENT_START).R * 0.7 + (endColor or CONFIG.GRADIENT_END).R * 0.3,
-            (startColor or CONFIG.GRADIENT_START).G * 0.7 + (endColor or CONFIG.GRADIENT_END).G * 0.3,
-            (startColor or CONFIG.GRADIENT_START).B * 0.7 + (endColor or CONFIG.GRADIENT_END).B * 0.3
-        )),
-        ColorSequenceKeypoint.new(1, endColor or CONFIG.GRADIENT_END)
+        ColorSequenceKeypoint.new(0, startColor or parent.BackgroundColor3),
+        ColorSequenceKeypoint.new(1, endColor or Color3.new(
+            math.max(0, parent.BackgroundColor3.R - 0.03),
+            math.max(0, parent.BackgroundColor3.G - 0.03),
+            math.max(0, parent.BackgroundColor3.B - 0.03)
+        ))
     }
-    gradient.Rotation = rotation or 135
+    gradient.Rotation = rotation or 90
     gradient.Parent = parent
     return gradient
-end
-
--- New utility for glassmorphism effect
-local function AddGlassEffect(parent, transparency)
-    local glass = Instance.new("Frame")
-    glass.Name = "GlassEffect"
-    glass.Size = UDim2.new(1, 0, 1, 0)
-    glass.Position = UDim2.new(0, 0, 0, 0)
-    glass.BackgroundColor3 = CONFIG.GLASS_OVERLAY
-    glass.BackgroundTransparency = transparency or CONFIG.GLASS_TRANSPARENCY
-    glass.BorderSizePixel = 0
-    glass.ZIndex = parent.ZIndex + 1
-    glass.Parent = parent
-    return glass
 end
 
 local function CreateTween(object, info, properties)
@@ -403,7 +376,7 @@ function VortexUI:CreateWindow(options)
     -- Remove border from main frame
     -- local mainStroke = AddStroke(mainFrame, 1, CONFIG.BORDER_COLOR, 0.5)
     
-    -- Enhanced Header Bar with premium gradient
+    -- Enhanced Header Bar with gradient
     local headerBar = CreateElement("Frame", {
         Name = "HeaderBar",
         Size = UDim2.new(1, 0, 0, GetResponsiveSize(56)),
@@ -412,13 +385,6 @@ function VortexUI:CreateWindow(options)
         BorderSizePixel = 0
     })
     headerBar.Parent = mainFrame
-    
-    -- Add subtle gradient to header
-    local headerGradient = AddGradient(headerBar, 
-        Color3.fromRGB(18, 18, 28), 
-        Color3.fromRGB(24, 24, 36), 
-        180
-    )
     
     -- Round only top corners of header
     local headerCorner = Instance.new("UICorner")
@@ -459,26 +425,19 @@ function VortexUI:CreateWindow(options)
     
     AddCorner(logoFrame, CONFIG.CORNER_RADIUS)
     
-    -- Logo glow effect with vibrant accent color
+    -- Logo glow effect
     local logoGlow = CreateElement("Frame", {
         Name = "LogoGlow",
         Size = UDim2.new(1, 12, 1, 12),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = CONFIG.ACCENT_COLOR,
-        BackgroundTransparency = 0.85,
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 0.8,
         BorderSizePixel = 0,
         ZIndex = logoFrame.ZIndex - 1
     })
     logoGlow.Parent = logoFrame
     AddCorner(logoGlow, CONFIG.CORNER_RADIUS_LG)
-    
-    -- Add gradient to logo glow
-    local logoGlowGradient = AddGradient(logoGlow, 
-        CONFIG.ACCENT_COLOR, 
-        CONFIG.ACCENT_SECONDARY, 
-        45
-    )
     
     local logoImage = CreateElement("ImageLabel", {
         Name = "LogoImage",
@@ -505,7 +464,7 @@ function VortexUI:CreateWindow(options)
     })
     titleLabel.Parent = headerBar
     
-    -- Window control buttons with modern pill design and subtle gradient
+    -- Window control buttons with modern pill design
     local controlsContainer = CreateElement("Frame", {
         Name = "ControlsContainer",
         Size = GetResponsiveUDim2(UDim2.new(0, 80, 0, 32)),
@@ -515,14 +474,7 @@ function VortexUI:CreateWindow(options)
     })
     controlsContainer.Parent = headerBar
     AddCorner(controlsContainer, UDim.new(0, GetResponsiveSize(16)))
-    AddStroke(controlsContainer, 1, CONFIG.BORDER_COLOR, 0.4)
-    
-    -- Add subtle gradient to controls container
-    local controlsGradient = AddGradient(controlsContainer, 
-        Color3.fromRGB(26, 26, 38), 
-        Color3.fromRGB(32, 32, 46), 
-        180
-    )
+    AddStroke(controlsContainer, 1, CONFIG.BORDER_COLOR, 0.5)
     
     -- Minimize Button
     local minimizeButton = CreateElement("TextButton", {
@@ -572,11 +524,10 @@ function VortexUI:CreateWindow(options)
     })
     closeIcon.Parent = closeButton
     
-    -- Enhanced hover effects for control buttons with vibrant colors
+    -- Enhanced hover effects for control buttons
     minimizeButton.MouseEnter:Connect(function()
         CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-            BackgroundTransparency = 0,
-            BackgroundColor3 = CONFIG.ACCENT_COLOR
+            BackgroundTransparency = 0
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
             TextColor3 = CONFIG.TEXT_COLOR
@@ -585,8 +536,7 @@ function VortexUI:CreateWindow(options)
     
     minimizeButton.MouseLeave:Connect(function()
         CreateTween(minimizeButton, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST, Enum.EasingStyle.Quart), {
-            BackgroundTransparency = 1,
-            BackgroundColor3 = CONFIG.INPUT_COLOR
+            BackgroundTransparency = 1
         }):Play()
         CreateTween(minimizeIcon, TweenInfo.new(CONFIG.TRANSITION_TIME_FAST), {
             TextColor3 = CONFIG.SUB_TEXT_COLOR
@@ -1187,11 +1137,15 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(button, CONFIG.CORNER_RADIUS)
             
-            -- Premium gradient with vibrant colors
+            -- Subtle inner shadow/depth
             local buttonGradient = AddGradient(button, 
+                Color3.fromRGB(
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.R * 255 + 15)),
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.G * 255 + 15)),
+                    math.min(255, math.max(0, CONFIG.ACCENT_COLOR.B * 255 + 15))
+                ),
                 CONFIG.ACCENT_COLOR, 
-                CONFIG.ACCENT_SECONDARY, 
-                135
+                180
             )
             
             button.BackgroundTransparency = 1
@@ -1204,16 +1158,6 @@ function VortexUI:CreateWindow(options)
                     BackgroundColor3 = CONFIG.ACCENT_HOVER,
                     Size = GetResponsiveUDim2(UDim2.new(0, 184, 0, 42))
                 }):Play()
-                -- Update gradient on hover
-                buttonGradient.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, CONFIG.ACCENT_HOVER),
-                    ColorSequenceKeypoint.new(0.5, Color3.new(
-                        CONFIG.ACCENT_HOVER.R * 0.7 + CONFIG.ACCENT_SECONDARY.R * 0.3,
-                        CONFIG.ACCENT_HOVER.G * 0.7 + CONFIG.ACCENT_SECONDARY.G * 0.3,
-                        CONFIG.ACCENT_HOVER.B * 0.7 + CONFIG.ACCENT_SECONDARY.B * 0.3
-                    )),
-                    ColorSequenceKeypoint.new(1, CONFIG.ACCENT_SECONDARY)
-                }
             end)
             
             button.MouseLeave:Connect(function()
@@ -1221,16 +1165,6 @@ function VortexUI:CreateWindow(options)
                     BackgroundColor3 = CONFIG.ACCENT_COLOR,
                     Size = GetResponsiveUDim2(UDim2.new(0, 180, 0, 42))
                 }):Play()
-                -- Restore gradient on leave
-                buttonGradient.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
-                    ColorSequenceKeypoint.new(0.5, Color3.new(
-                        CONFIG.ACCENT_COLOR.R * 0.7 + CONFIG.ACCENT_SECONDARY.R * 0.3,
-                        CONFIG.ACCENT_COLOR.G * 0.7 + CONFIG.ACCENT_SECONDARY.G * 0.3,
-                        CONFIG.ACCENT_COLOR.B * 0.7 + CONFIG.ACCENT_SECONDARY.B * 0.3
-                    )),
-                    ColorSequenceKeypoint.new(1, CONFIG.ACCENT_SECONDARY)
-                }
             end)
             
             -- Click ripple effect
@@ -1468,15 +1402,7 @@ function VortexUI:CreateWindow(options)
             toggleButton.Parent = toggleFrame
             
             AddCorner(toggleButton, UDim.new(0, 13))
-            AddStroke(toggleButton, 1, CONFIG.BORDER_COLOR, 0.4)
-            
-            -- Add gradient to toggle button
-            local toggleGradient = AddGradient(toggleButton, 
-                CONFIG.ACCENT_COLOR, 
-                CONFIG.ACCENT_SECONDARY, 
-                135
-            )
-            toggleGradient.Enabled = false -- Initially disabled
+            AddStroke(toggleButton, 1, CONFIG.BORDER_COLOR, 0.5)
             
             local toggleIndicator = CreateElement("Frame", {
                 Name = "Indicator",
@@ -1501,10 +1427,6 @@ function VortexUI:CreateWindow(options)
                         Position = UDim2.new(0, GetResponsiveSize(25), 0.5, -GetResponsiveSize(10)),
                         BackgroundColor3 = Color3.new(1, 1, 1)
                     }):Play()
-                    -- Enable gradient when active
-                    if not isLocked then
-                        toggleGradient.Enabled = true
-                    end
                 else
                     CreateTween(toggleButton, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
                         BackgroundColor3 = isLocked and Color3.fromRGB(50, 50, 55) or CONFIG.INPUT_COLOR
@@ -1513,8 +1435,6 @@ function VortexUI:CreateWindow(options)
                         Position = UDim2.new(0, GetResponsiveSize(3), 0.5, -GetResponsiveSize(10)),
                         BackgroundColor3 = isLocked and CONFIG.MUTED_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
-                    -- Disable gradient when inactive
-                    toggleGradient.Enabled = false
                 end
             end
             
@@ -1642,13 +1562,6 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(sliderFill, UDim.new(0, GetResponsiveSize(3)))
             
-            -- Add gradient to slider fill
-            local sliderFillGradient = AddGradient(sliderFill, 
-                CONFIG.ACCENT_COLOR, 
-                CONFIG.ACCENT_SECONDARY, 
-                90
-            )
-            
             -- Modern slider thumb with glow
             local sliderButton = CreateElement("TextButton", {
                 Name = "SliderButton",
@@ -1663,14 +1576,14 @@ function VortexUI:CreateWindow(options)
             
             AddCorner(sliderButton, UDim.new(1, 0))
             
-            -- Thumb glow with vibrant color
+            -- Thumb glow
             local thumbGlow = CreateElement("Frame", {
                 Name = "ThumbGlow",
                 Size = GetResponsiveUDim2(UDim2.new(1, 8, 1, 8)),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
-                BackgroundColor3 = CONFIG.ACCENT_GLOW,
-                BackgroundTransparency = 0.6,
+                BackgroundColor3 = CONFIG.ACCENT_COLOR,
+                BackgroundTransparency = 0.7,
                 BorderSizePixel = 0,
                 ZIndex = sliderButton.ZIndex - 1
             })
@@ -2045,11 +1958,10 @@ function VortexUI:CreateWindow(options)
                         BackgroundTransparency = selected and 0.85 or 0
                     }):Play()
                     CreateTween(optionLabel, TweenInfo.new(0.15), {
-                        TextColor3 = selected and Color3.new(1, 1, 1) or CONFIG.TEXT_COLOR
+                        TextColor3 = selected and CONFIG.ACCENT_COLOR or CONFIG.TEXT_COLOR
                     }):Play()
                     optionLabel.Font = selected and Enum.Font.Montserrat or Enum.Font.Montserrat
                     checkmark.Visible = selected
-                    checkmark.TextColor3 = selected and Color3.new(1, 1, 1) or CONFIG.ACCENT_COLOR
                 end
                 
                 optionButton.MouseButton1Click:Connect(function()
@@ -2245,14 +2157,6 @@ function VortexUI:CreateWindow(options)
                         math.min(255, math.max(0, CONFIG.INPUT_COLOR.R * 255 + 8)),
                         math.min(255, math.max(0, CONFIG.INPUT_COLOR.G * 255 + 8)),
                         math.min(255, math.max(0, CONFIG.INPUT_COLOR.B * 255 + 8))
-                    )
-                }):Play()
-                -- Add subtle glow effect on focus
-                CreateTween(textBoxContainer, TweenInfo.new(0.15), {
-                    BackgroundColor3 = Color3.fromRGB(
-                        math.min(255, math.max(0, CONFIG.ACCENT_COLOR.R * 255 * 0.1 + CONFIG.INPUT_COLOR.R * 255 * 0.9)),
-                        math.min(255, math.max(0, CONFIG.ACCENT_COLOR.G * 255 * 0.1 + CONFIG.INPUT_COLOR.G * 255 * 0.9)),
-                        math.min(255, math.max(0, CONFIG.ACCENT_COLOR.B * 255 * 0.1 + CONFIG.INPUT_COLOR.B * 255 * 0.9))
                     )
                 }):Play()
             end)
@@ -2489,21 +2393,16 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     accentCover.Parent = headerAccent
     
-    -- Add gradient to accent with vibrant colors
+    -- Add gradient to accent
     local accentGradient = Instance.new("UIGradient")
     accentGradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
-        ColorSequenceKeypoint.new(0.5, Color3.new(
-            CONFIG.ACCENT_COLOR.R * 0.7 + CONFIG.ACCENT_SECONDARY.R * 0.3,
-            CONFIG.ACCENT_COLOR.G * 0.7 + CONFIG.ACCENT_SECONDARY.G * 0.3,
-            CONFIG.ACCENT_COLOR.B * 0.7 + CONFIG.ACCENT_SECONDARY.B * 0.3
-        )),
-        ColorSequenceKeypoint.new(1, CONFIG.ACCENT_SECONDARY)
+        ColorSequenceKeypoint.new(1, CONFIG.ACCENT_HOVER)
     }
-    accentGradient.Rotation = 135
+    accentGradient.Rotation = 90
     accentGradient.Parent = headerAccent
     
-    -- Lock icon container with gradient
+    -- Lock icon container
     local iconContainer = CreateElement("Frame", {
         Name = "IconContainer",
         Size = UDim2.new(0, 56, 0, 56),
@@ -2514,13 +2413,6 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     })
     iconContainer.Parent = keyWindow
     AddCorner(iconContainer, UDim.new(1, 0))
-    
-    -- Add gradient to icon container
-    local iconGradient = AddGradient(iconContainer, 
-        CONFIG.ACCENT_COLOR, 
-        CONFIG.ACCENT_SECONDARY, 
-        135
-    )
     
     local lockIcon = CreateElement("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -2632,44 +2524,17 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
     
     AddCorner(submitButton, CONFIG.CORNER_RADIUS)
     
-    -- Add gradient to submit button
-    local submitGradient = AddGradient(submitButton, 
-        CONFIG.ACCENT_COLOR, 
-        CONFIG.ACCENT_SECONDARY, 
-        135
-    )
-    
-    -- Button hover effects with vibrant colors
+    -- Button hover effects
     submitButton.MouseEnter:Connect(function()
         CreateTween(submitButton, TweenInfo.new(0.15), {
             BackgroundColor3 = CONFIG.ACCENT_HOVER
         }):Play()
-        -- Update gradient on hover
-        submitGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, CONFIG.ACCENT_HOVER),
-            ColorSequenceKeypoint.new(0.5, Color3.new(
-                CONFIG.ACCENT_HOVER.R * 0.7 + CONFIG.ACCENT_SECONDARY.R * 0.3,
-                CONFIG.ACCENT_HOVER.G * 0.7 + CONFIG.ACCENT_SECONDARY.G * 0.3,
-                CONFIG.ACCENT_HOVER.B * 0.7 + CONFIG.ACCENT_SECONDARY.B * 0.3
-            )),
-            ColorSequenceKeypoint.new(1, CONFIG.ACCENT_SECONDARY)
-        }
     end)
     
     submitButton.MouseLeave:Connect(function()
         CreateTween(submitButton, TweenInfo.new(0.15), {
             BackgroundColor3 = CONFIG.ACCENT_COLOR
         }):Play()
-        -- Restore gradient on leave
-        submitGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, CONFIG.ACCENT_COLOR),
-            ColorSequenceKeypoint.new(0.5, Color3.new(
-                CONFIG.ACCENT_COLOR.R * 0.7 + CONFIG.ACCENT_SECONDARY.R * 0.3,
-                CONFIG.ACCENT_COLOR.G * 0.7 + CONFIG.ACCENT_SECONDARY.G * 0.3,
-                CONFIG.ACCENT_COLOR.B * 0.7 + CONFIG.ACCENT_SECONDARY.B * 0.3
-            )),
-            ColorSequenceKeypoint.new(1, CONFIG.ACCENT_SECONDARY)
-        }
     end)
     
     -- Close button
@@ -2822,4 +2687,3 @@ function VortexUI:ShowKeyWindow(callback, keySystemData)
 end
 
 return VortexUI
-
