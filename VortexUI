@@ -18,7 +18,8 @@ else
         ["chevron-up"] = "▲",
         ["x"] = "×",
         ["check"] = "✓",
-        ["menu"] = "☰"
+        ["menu"] = "☰",
+        ["search"] = "search"
     }
 end
 
@@ -1131,7 +1132,7 @@ function VortexUI:CreateWindow(options)
             BorderSizePixel = 0
         })
         tabContent.Parent = contentArea
-        tabContent.ClipsDescendants = true
+        tabContent.ClipsDescendants = false
         
         -- Use AutomaticCanvasSize for engine-native performance
         contentArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -1808,15 +1809,14 @@ function VortexUI:CreateWindow(options)
                 AddCorner(searchContainer, CONFIG.CORNER_RADIUS_SM)
                 local searchStroke = AddStroke(searchContainer, 1, CONFIG.BORDER_COLOR, 0.4)
                 
-                local searchIcon = CreateElement("TextLabel", {
+                local searchIcon = CreateElement("ImageLabel", {
                     Name = "SearchIcon",
                     Size = UDim2.new(0, 12, 0, 12),
                     Position = UDim2.new(0, 6, 0.5, -6),
                     BackgroundTransparency = 1,
-                    Text = Icons["search"] or "🔍",
-                    TextColor3 = CONFIG.SUB_TEXT_COLOR,
-                    TextSize = 10,
-                    Font = Enum.Font.Montserrat,
+                    Image = Icons["search"] or "rbxassetid://6031090509",
+                    ImageColor3 = CONFIG.SUB_TEXT_COLOR,
+                    ImageTransparency = 0,
                     ZIndex = 32
                 })
                 searchIcon.Parent = searchContainer
