@@ -1,0 +1,71 @@
+-- Load Rayfield UI Library
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Vortex Hub",
+    Icon = nil,
+    LoadingTitle = "Join our Discord",
+    LoadingSubtitle = "by Vortex",
+    Theme = "Ocean",
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "NorthStar",
+        FileName = "Vortex"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "Hub2ZEwsE4",
+        RememberJoins = true
+    },
+    KeySystem = true,
+    KeySettings = {
+        Title = "Vortex Hub",
+        Subtitle = "Key System",
+        Note = "No method of obtaining the key is provided",
+        FileName = "Key",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"Hello"}
+    }
+})
+
+-- Main Tab
+local MainTab = Window:CreateTab("Main", "workflow")
+local ChangelogTab = Window:CreateTab("Changelog", "scroll-text")
+
+
+local Button = MainTab:CreateButton({
+   Name = "Reveal the other persons number",
+   Callback = function()
+        game:GetService("ReplicatedStorage").Events.Remote.UseRevealNumber:FireServer()
+   end,
+})
+
+ChangelogTab:CreateSection("Information")
+
+ChangelogTab:CreateParagraph({
+    Title = "Discord",
+    Content = "For support, join our Discord server."
+})
+
+ChangelogTab:CreateButton({
+    Name = "Copy Discord Invite",
+    Icon = "copy",
+    Callback = function()
+        setclipboard("https://discord.gg/ZNnTr4hVCb")
+        Rayfield:Notify({
+            Title = "Discord Invite Copied!",
+            Content = "The Discord invite link has been copied to your clipboard.",
+            Duration = 3
+        })
+    end
+})
+
+ChangelogTab:CreateSection("v1.0.0 - Initial Release")
+
+ChangelogTab:CreateParagraph({
+    Title = "Features Added",
+    Content = "• Reveal Opponents number"
+})
