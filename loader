@@ -21,7 +21,7 @@ local Scripts = {
     [1537690962] = "https://raw.githubusercontent.com/VortexScriptsS/Vortex-Scripts/refs/heads/main/BeeSwarm",
     [114640202062357] = "https://raw.githubusercontent.com/VortexScriptsS/Vortex-Scripts/refs/heads/main/SwingObbyforBrainrots!"
     [123657429151726] = "https://raw.githubusercontent.com/VortexScriptsS/Vortex-Scripts/refs/heads/main/Guess%20my%20number"
-    [11534222714] = " "https://raw.githubusercontent.com/VortexScriptsS/Vortex-Scripts/refs/heads/main/AotFw"
+    [11534222714] =  "https://raw.githubusercontent.com/VortexScriptsS/Vortex-Scripts/refs/heads/main/AotFw"
 }
 
 local scriptUrl = Scripts[game.PlaceId]
