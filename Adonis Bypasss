@@ -3,7 +3,10 @@ local _game = _cloneref(game)
 
 local function anchor_ui(f)
     local wrapped = (newcclosure or function(x) return x end)(f)
-    if setfenv then setfenv(wrapped, getfenv(0)) end
+    -- Wrap in pcall to prevent the 'cannot change environment' crash
+    pcall(function()
+        if setfenv then setfenv(wrapped, getfenv(0)) end
+    end)
     return wrapped
 end
 
@@ -24,13 +27,8 @@ local function refresh_cache()
             if s and typeof(d) == "function" and not _ptr_a then
                 _ptr_a = d
                 _hookfunc(_ptr_a, anchor_ui(function(id, info, ...)
-                    -- Logic: If the game tries to send ban info, we pass dummy data instead
                     if id == "Check" or id == "Test" then return true end
-                    
-                    -- Disguising the flag as a rendering error
                     warn("UI Driver: Buffer overflow on " .. tostring(id)) 
-                    
-                    -- Returns a generic 'Success' to the AC so it stops trying to report
                     return true 
                 end))
             end
@@ -48,19 +46,13 @@ end
 setthreadidentity(2)
 refresh_cache()
 
--- Anti-Linking: Blocks Namecalls that games use to track you across accounts
 local oNamecall; oNamecall = _hookmeta(_game, "__namecall", anchor_ui(function(self, ...)
     local method = getnamecallmethod()
-    local args = {...}
-
     if not _checkcaller() then
-        -- Blocks the game from kicking you or Force-Teleporting you to a "Ban Jail"
         if (method == "Kick" or method == "kick" or method == "Teleport") then
             warn("UI Driver: Suppressed external request.")
             return nil
         end
-        
-        -- Blocks games from gathering your unique 'JobId' or 'Data' to link alts
         if (method == "GetHttpRequest" or method == "PostAsync") then
             warn("UI Driver: Data transmission paused.")
             return nil
@@ -69,7 +61,6 @@ local oNamecall; oNamecall = _hookmeta(_game, "__namecall", anchor_ui(function(s
     return oNamecall(self, ...)
 end))
 
--- Stack Protection: Tells the game every function is a native ROBLOX one
 local oInfo; oInfo = _hookfunc(getrenv().debug.info, anchor_ui(function(...)
     if not _checkcaller() then
         local target = ...
@@ -80,14 +71,11 @@ local oInfo; oInfo = _hookfunc(getrenv().debug.info, anchor_ui(function(...)
     return oInfo(...)
 end))
 
--- Hides your identity by spoofing the __index of sensitive properties
 local oIndex; oIndex = _hookmeta(_game, "__index", anchor_ui(function(self, key)
     if not _checkcaller() then
-        -- If the game tries to read your Unique ID to ban your HWID/Account, we lie
         if self == _game and (key == "JobId" or key == "PlaceId") then
             return "00000000-0000-0000-0000-000000000000"
         end
-        
         if (self == _ptr_a or self == _ptr_b) then
             if key == "Name" then return "FrameHandler" end
             if key == "Parent" then return nil end
