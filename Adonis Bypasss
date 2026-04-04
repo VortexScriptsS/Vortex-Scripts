@@ -1,25 +1,24 @@
 local _cloneref = (cloneref or function(o) return o end)
 local _game = _cloneref(game)
 
+-- Fixed anchor_ui: Removed setfenv which causes fatal crashes on modern executors
 local function anchor_ui(f)
-    local wrapped = (newcclosure or function(x) return x end)(f)
-    -- Wrap in pcall to prevent the 'cannot change environment' crash
-    pcall(function()
-        if setfenv then setfenv(wrapped, getfenv(0)) end
-    end)
-    return wrapped
+    return (newcclosure or function(x) return x end)(f)
 end
 
-local _rawget = clonefunction(rawget)
-local _hookfunc = clonefunction(hookfunction)
-local _hookmeta = clonefunction(hookmetamethod)
-local _getgc = clonefunction(getgc)
-local _checkcaller = clonefunction(checkcaller)
+local _rawget = (clonefunction or function(f) return f end)(rawget)
+local _hookfunc = (clonefunction or function(f) return f end)(hookfunction)
+local _hookmeta = (clonefunction or function(f) return f end)(hookmetamethod)
+local _getgc = (clonefunction or function(f) return f end)(getgc)
+local _checkcaller = (clonefunction or function(f) return f end)(checkcaller)
 
 local _ptr_a, _ptr_b
 
 local function refresh_cache()
-    for _, v in _getgc(true) do
+    local success, gc = pcall(_getgc, true)
+    if not success then return end
+    
+    for _, v in pairs(gc) do
         if typeof(v) == "table" then
             local s, d = pcall(_rawget, v, "Detected")
             local s2, k = pcall(_rawget, v, "Kill")
@@ -27,8 +26,6 @@ local function refresh_cache()
             if s and typeof(d) == "function" and not _ptr_a then
                 _ptr_a = d
                 _hookfunc(_ptr_a, anchor_ui(function(id, info, ...)
-                    if id == "Check" or id == "Test" then return true end
-                    warn("UI Driver: Buffer overflow on " .. tostring(id)) 
                     return true 
                 end))
             end
@@ -36,39 +33,38 @@ local function refresh_cache()
             if s2 and typeof(k) == "function" and not _ptr_b then
                 _ptr_b = k
                 _hookfunc(_ptr_b, anchor_ui(function() 
-                    warn("UI Driver: Context lost, recovering...") 
+                    -- Removed warn to prevent potential recursive logging crashes
                 end))
             end
         end
     end
 end
 
-setthreadidentity(2)
+-- Use pcall for identity shifts as some executors restrict this
+pcall(function() setthreadidentity(2) end)
 refresh_cache()
 
 local oNamecall; oNamecall = _hookmeta(_game, "__namecall", anchor_ui(function(self, ...)
     local method = getnamecallmethod()
     if not _checkcaller() then
+        -- Standardized method checks to prevent bypass detection
         if (method == "Kick" or method == "kick" or method == "Teleport") then
-            warn("UI Driver: Suppressed external request.")
             return nil
         end
         if (method == "GetHttpRequest" or method == "PostAsync") then
-            warn("UI Driver: Data transmission paused.")
             return nil
         end
     end
     return oNamecall(self, ...)
 end))
 
-local oInfo; oInfo = _hookfunc(getrenv().debug.info, anchor_ui(function(...)
+local oInfo; oInfo = _hookfunc(getrenv().debug.info, anchor_ui(function(lvlOrFunc, specs)
     if not _checkcaller() then
-        local target = ...
-        if (_ptr_a and target == _ptr_a) or (_ptr_b and target == _ptr_b) then
+        if (lvlOrFunc == _ptr_a or lvlOrFunc == _ptr_b) then
             return "C", "builtin", 0 
         end
     end
-    return oInfo(...)
+    return oInfo(lvlOrFunc, specs)
 end))
 
 local oIndex; oIndex = _hookmeta(_game, "__index", anchor_ui(function(self, key)
@@ -84,17 +80,18 @@ local oIndex; oIndex = _hookmeta(_game, "__index", anchor_ui(function(self, key)
     return oIndex(self, key)
 end))
 
+-- Added a basic check to tostring to prevent string-conversion loops
 local oTostring; oTostring = _hookmeta(_game, "__tostring", anchor_ui(function(self)
     if not _checkcaller() and (self == _ptr_a or self == _ptr_b) then
-        return "function: 0x" .. string.lower(string.sub(tostring({}), 10)) 
+        return "function: 0x" .. string.reverse("abcdef123456") -- Static hex to avoid tostring({}) loops
     end
     return oTostring(self)
 end))
 
-setthreadidentity(7)
+pcall(function() setthreadidentity(7) end)
 
 task.spawn(function()
-    while task.wait(25) do
+    while task.wait(30) do -- Increased delay to reduce CPU spikes
         pcall(refresh_cache)
     end
 end)
