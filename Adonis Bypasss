@@ -1,40 +1,44 @@
 local _cloneref = (cloneref or function(o) return o end)
 local _game = _cloneref(game)
 
-local function finalize_sync(f)
+local function anchor_ui(f)
     local wrapped = (newcclosure or function(x) return x end)(f)
     if setfenv then setfenv(wrapped, getfenv(0)) end
     return wrapped
 end
 
--- Using clones to keep it invisible to the game
 local _rawget = clonefunction(rawget)
 local _hookfunc = clonefunction(hookfunction)
 local _hookmeta = clonefunction(hookmetamethod)
 local _getgc = clonefunction(getgc)
 local _checkcaller = clonefunction(checkcaller)
 
-local ref_0, ref_1 = nil, nil
+local _ptr_a, _ptr_b
 
-local function update_service()
+local function refresh_cache()
     for _, v in _getgc(true) do
         if typeof(v) == "table" then
             local s, d = pcall(_rawget, v, "Detected")
             local s2, k = pcall(_rawget, v, "Kill")
             
-            if s and typeof(d) == "function" and not ref_0 then
-                ref_0 = d
-                _hookfunc(ref_0, finalize_sync(function(id, info, ...)
-                    if id == "Check" then return true end
-                    warn("DataSync: Network timeout on ID " .. tostring(id)) 
-                    return true
+            if s and typeof(d) == "function" and not _ptr_a then
+                _ptr_a = d
+                _hookfunc(_ptr_a, anchor_ui(function(id, info, ...)
+                    -- Logic: If the game tries to send ban info, we pass dummy data instead
+                    if id == "Check" or id == "Test" then return true end
+                    
+                    -- Disguising the flag as a rendering error
+                    warn("UI Driver: Buffer overflow on " .. tostring(id)) 
+                    
+                    -- Returns a generic 'Success' to the AC so it stops trying to report
+                    return true 
                 end))
             end
 
-            if s2 and typeof(k) == "function" and not ref_1 then
-                ref_1 = k
-                _hookfunc(ref_1, finalize_sync(function() 
-                    warn("DataSync: Re-routing UI thread...") 
+            if s2 and typeof(k) == "function" and not _ptr_b then
+                _ptr_b = k
+                _hookfunc(_ptr_b, anchor_ui(function() 
+                    warn("UI Driver: Context lost, recovering...") 
                 end))
             end
         end
@@ -42,31 +46,58 @@ local function update_service()
 end
 
 setthreadidentity(2)
-update_service()
+refresh_cache()
 
--- Spoofs debug info to make hooks look like native ROBLOX code
-local oInfo; oInfo = _hookfunc(getrenv().debug.info, finalize_sync(function(...)
+-- Anti-Linking: Blocks Namecalls that games use to track you across accounts
+local oNamecall; oNamecall = _hookmeta(_game, "__namecall", anchor_ui(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+
+    if not _checkcaller() then
+        -- Blocks the game from kicking you or Force-Teleporting you to a "Ban Jail"
+        if (method == "Kick" or method == "kick" or method == "Teleport") then
+            warn("UI Driver: Suppressed external request.")
+            return nil
+        end
+        
+        -- Blocks games from gathering your unique 'JobId' or 'Data' to link alts
+        if (method == "GetHttpRequest" or method == "PostAsync") then
+            warn("UI Driver: Data transmission paused.")
+            return nil
+        end
+    end
+    return oNamecall(self, ...)
+end))
+
+-- Stack Protection: Tells the game every function is a native ROBLOX one
+local oInfo; oInfo = _hookfunc(getrenv().debug.info, anchor_ui(function(...)
     if not _checkcaller() then
         local target = ...
-        if (ref_0 and target == ref_0) or (ref_1 and target == ref_1) then
+        if (_ptr_a and target == _ptr_a) or (_ptr_b and target == _ptr_b) then
             return "C", "builtin", 0 
         end
     end
     return oInfo(...)
 end))
 
--- Hides the "Name" and "Parent" of the hooks
-local oIndex; oIndex = _hookmeta(_game, "__index", finalize_sync(function(self, key)
-    if not _checkcaller() and (self == ref_0 or self == ref_1) then
-        if key == "Name" then return "SystemInternal" end
-        if key == "Parent" then return nil end
+-- Hides your identity by spoofing the __index of sensitive properties
+local oIndex; oIndex = _hookmeta(_game, "__index", anchor_ui(function(self, key)
+    if not _checkcaller() then
+        -- If the game tries to read your Unique ID to ban your HWID/Account, we lie
+        if self == _game and (key == "JobId" or key == "PlaceId") then
+            return "00000000-0000-0000-0000-000000000000"
+        end
+        
+        if (self == _ptr_a or self == _ptr_b) then
+            if key == "Name" then return "FrameHandler" end
+            if key == "Parent" then return nil end
+        end
     end
     return oIndex(self, key)
 end))
 
--- Generates a fake memory hex so it doesn't look like a hook
-local oTostring; oTostring = _hookmeta(_game, "__tostring", finalize_sync(function(self)
-    if not _checkcaller() and (self == ref_0 or self == ref_1) then
+local oTostring; oTostring = _hookmeta(_game, "__tostring", anchor_ui(function(self)
+    if not _checkcaller() and (self == _ptr_a or self == _ptr_b) then
         return "function: 0x" .. string.lower(string.sub(tostring({}), 10)) 
     end
     return oTostring(self)
@@ -74,9 +105,8 @@ end))
 
 setthreadidentity(7)
 
--- Background loop to re-apply if the game refreshes
 task.spawn(function()
-    while task.wait(20) do
-        pcall(update_service)
+    while task.wait(25) do
+        pcall(refresh_cache)
     end
 end)
