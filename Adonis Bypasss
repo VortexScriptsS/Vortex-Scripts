@@ -1,57 +1,82 @@
-local g = getinfo or debug.getinfo
-local d = true
-local h = {}
+local _cloneref = (cloneref or function(o) return o end)
+local _game = _cloneref(game)
 
-local x, y
+local function finalize_sync(f)
+    local wrapped = (newcclosure or function(x) return x end)(f)
+    if setfenv then setfenv(wrapped, getfenv(0)) end
+    return wrapped
+end
 
-setthreadidentity(2)
+-- Using clones to keep it invisible to the game
+local _rawget = clonefunction(rawget)
+local _hookfunc = clonefunction(hookfunction)
+local _hookmeta = clonefunction(hookmetamethod)
+local _getgc = clonefunction(getgc)
+local _checkcaller = clonefunction(checkcaller)
 
-for i, v in getgc(true) do
-    if typeof(v) == "table" then
-        local a = rawget(v, "Detected")
-        local b = rawget(v, "Kill")
-    
-        if typeof(a) == "function" and not x then
-            x = a
+local ref_0, ref_1 = nil, nil
+
+local function update_service()
+    for _, v in _getgc(true) do
+        if typeof(v) == "table" then
+            local s, d = pcall(_rawget, v, "Detected")
+            local s2, k = pcall(_rawget, v, "Kill")
             
-            local o; o = hookfunction(x, function(c, f, n)
-                if c ~= "_" then
-                    if d then
-                        warn("Adonis AntiCheat flagged\nMethod: " .. c .. "\nInfo: " .. f)
-                    end
-                end
-                
-                return true
-            end)
+            if s and typeof(d) == "function" and not ref_0 then
+                ref_0 = d
+                _hookfunc(ref_0, finalize_sync(function(id, info, ...)
+                    if id == "Check" then return true end
+                    warn("DataSync: Network timeout on ID " .. tostring(id)) 
+                    return true
+                end))
+            end
 
-            table.insert(h, x)
-        end
-
-        if rawget(v, "Variables") and rawget(v, "Process") and typeof(b) == "function" and not y then
-            y = b
-            local o; o = hookfunction(y, function(f)
-                if d then
-                    warn("Adonis AntiCheat tried to kill (fallback): " .. f)
-                end
-            end)
-
-            table.insert(h, y)
+            if s2 and typeof(k) == "function" and not ref_1 then
+                ref_1 = k
+                _hookfunc(ref_1, finalize_sync(function() 
+                    warn("DataSync: Re-routing UI thread...") 
+                end))
+            end
         end
     end
 end
 
-local o; o = hookfunction(getrenv().debug.info, newcclosure(function(...)
-    local a, f = ...
+setthreadidentity(2)
+update_service()
 
-    if x and a == x then
-        if d then
-            warn("Vortex | adonis bypassed")
+-- Spoofs debug info to make hooks look like native ROBLOX code
+local oInfo; oInfo = _hookfunc(getrenv().debug.info, finalize_sync(function(...)
+    if not _checkcaller() then
+        local target = ...
+        if (ref_0 and target == ref_0) or (ref_1 and target == ref_1) then
+            return "C", "builtin", 0 
         end
-
-        return coroutine.yield(coroutine.running())
     end
-    
-    return o(...)
+    return oInfo(...)
+end))
+
+-- Hides the "Name" and "Parent" of the hooks
+local oIndex; oIndex = _hookmeta(_game, "__index", finalize_sync(function(self, key)
+    if not _checkcaller() and (self == ref_0 or self == ref_1) then
+        if key == "Name" then return "SystemInternal" end
+        if key == "Parent" then return nil end
+    end
+    return oIndex(self, key)
+end))
+
+-- Generates a fake memory hex so it doesn't look like a hook
+local oTostring; oTostring = _hookmeta(_game, "__tostring", finalize_sync(function(self)
+    if not _checkcaller() and (self == ref_0 or self == ref_1) then
+        return "function: 0x" .. string.lower(string.sub(tostring({}), 10)) 
+    end
+    return oTostring(self)
 end))
 
 setthreadidentity(7)
+
+-- Background loop to re-apply if the game refreshes
+task.spawn(function()
+    while task.wait(20) do
+        pcall(update_service)
+    end
+end)
