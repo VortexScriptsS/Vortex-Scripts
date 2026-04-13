@@ -384,10 +384,6 @@ function Despair:CreateWindow(config)
 			ButtonLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
 			ButtonLabel.TextSize = 14.000
 			ButtonLabel.TextXAlignment = Enum.TextXAlignment.Left
-			ButtonLabel.Padding = {
-				Left = 10,
-				Right = 10,
-			}
 
 			if Icon then
 				local IconImage = Instance.new("ImageLabel")
@@ -444,10 +440,6 @@ function Despair:CreateWindow(config)
 			ToggleLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
 			ToggleLabel.TextSize = 14.000
 			ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-			ToggleLabel.Padding = {
-				Left = 10,
-				Right = 10,
-			}
 
 			local Switch = Instance.new("Frame")
 			Switch.Name = "Switch"
@@ -545,10 +537,6 @@ function Despair:CreateWindow(config)
 			SliderLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
 			SliderLabel.TextSize = 14.000
 			SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-			SliderLabel.Padding = {
-				Left = 10,
-				Right = 10,
-			}
 
 			local SliderFill = Instance.new("Frame")
 			SliderFill.Name = "SliderFill"
@@ -700,10 +688,6 @@ function Despair:CreateWindow(config)
 			DropdownLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
 			DropdownLabel.TextSize = 14.000
 			DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-			DropdownLabel.Padding = {
-				Left = 10,
-				Right = 10,
-			}
 
 			local DropdownButton = Instance.new("TextButton")
 			DropdownButton.Parent = Dropdown
@@ -826,10 +810,6 @@ function Despair:CreateWindow(config)
 			LabelText.TextColor3 = Color3.fromRGB(235, 235, 235)
 			LabelText.TextSize = 14.000
 			LabelText.TextXAlignment = Enum.TextXAlignment.Left
-			LabelText.Padding = {
-				Left = 10,
-				Right = 10,
-			}
 
 			table.insert(Tab.Elements, {Type = "Label", Instance = Label})
 			return Label
