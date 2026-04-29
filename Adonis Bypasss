@@ -11,3 +11,26 @@ for k, v in pairs(getgc(true)) do
         }
     end
 end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+
+    if self == LocalPlayer and (method == "Kick" or method == "kick") then
+        return nil
+    end
+
+    return oldNamecall(self, ...)
+end)
+
+local oldIndex
+oldIndex = hookmetamethod(game, "__index", function(self, index)
+    if self == LocalPlayer and (index == "Kick" or index == "kick") then
+        return function() end
+    end
+    return oldIndex(self, index)
+end)
